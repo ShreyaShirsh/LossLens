@@ -77,7 +77,7 @@ for example `TcpLossAware-tree_bw100_rtt50_loss0.01_buf1_f1_x0.3_t0_s1`.
 | `--loss` | 0.01 | Random packet loss rate on the wireless hop |
 | `--buffer` | 1.0 | Bottleneck buffer (× BDP) |
 | `--flows` | 1 | Monitored flows |
-| `--crossLoad` | 0.3 | Average bursty UDP load (fraction of bottleneck) |
+| `--crossLoad` | 0.3 | Average bursty UDP load, fraction of bottleneck (below 0.8; bursts run at 0.8) |
 | `--crossTcp` | 0 | Competing CUBIC flows |
 | `--duration` | 20 | Seconds |
 | `--seed` | 1 | RNG run number |

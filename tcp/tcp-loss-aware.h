@@ -43,6 +43,7 @@ class TcpLossAware : public TcpCubic
 
     std::string GetName() const override;
     void PktsAcked(Ptr<TcpSocketState> tcb, uint32_t segmentsAcked, const Time& rtt) override;
+    void IncreaseWindow(Ptr<TcpSocketState> tcb, uint32_t segmentsAcked) override;
     uint32_t GetSsThresh(Ptr<const TcpSocketState> tcb, uint32_t bytesInFlight) override;
     void CongestionStateSet(Ptr<TcpSocketState> tcb,
                             const TcpSocketState::TcpCongState_t newState) override;
@@ -65,6 +66,8 @@ class TcpLossAware : public TcpCubic
     TcpSocketState::TcpCongState_t m_lastState{TcpSocketState::CA_OPEN};
     uint32_t m_eventId{0};
     uint32_t m_consecutiveRandom{0};
+    bool m_restoreSsThresh{false}; //!< put m_savedSsThresh back once recovery ends
+    uint32_t m_savedSsThresh{0};
 
     TracedCallback<const LossEventInfo&> m_lossEventTrace;
 };

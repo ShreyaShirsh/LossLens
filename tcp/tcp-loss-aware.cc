@@ -155,13 +155,33 @@ TcpLossAware::GetSsThresh(Ptr<const TcpSocketState> tcb, uint32_t bytesInFlight)
 
     if (congestion)
     {
+        m_restoreSsThresh = false;
         return TcpCubic::GetSsThresh(tcb, bytesInFlight);
     }
-    // Random loss: keep (most of) the window.
+    // Random loss: keep (most of) the window. ns-3 sets cwnd = ssthresh when
+    // recovery ends, so ssthresh must be about cwnd here; the pre-loss value is
+    // put back afterwards (IncreaseWindow) so slow start can continue.
     // TODO: TcpCubic's internal state (W_max, epoch) is not updated on
     // this path; check that the window growth afterwards behaves sensibly.
+    if (!m_restoreSsThresh)
+    {
+        m_savedSsThresh = tcb->m_ssThresh.Get();
+        m_restoreSsThresh = true;
+    }
     uint32_t target = static_cast<uint32_t>(tcb->m_cWnd.Get() * m_randomLossBeta);
     return std::max(target, 2 * tcb->m_segmentSize);
+}
+
+void
+TcpLossAware::IncreaseWindow(Ptr<TcpSocketState> tcb, uint32_t segmentsAcked)
+{
+    if (m_restoreSsThresh && tcb->m_congState == TcpSocketState::CA_OPEN)
+    {
+        // Recovery from a random loss is over: forget it happened.
+        tcb->m_ssThresh = std::max(m_savedSsThresh, tcb->m_ssThresh.Get());
+        m_restoreSsThresh = false;
+    }
+    TcpCubic::IncreaseWindow(tcb, segmentsAcked);
 }
 
 Ptr<TcpCongestionOps>

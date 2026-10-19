@@ -527,18 +527,28 @@ main(int argc, char* argv[])
         app->SetStopTime(Seconds(P.duration));
     }
 
-    // ---- cross traffic: bursty UDP (ON at 2x the average rate, 50% duty cycle)
+    // ---- cross traffic: bursty UDP. ON bursts run at 80% of the bottleneck (never
+    // more, or TCP is simply starved); the ON share of each ~1 s cycle sets the
+    // average load.
     if (P.crossLoad > 0)
     {
+        const double onShareOfLink = 0.8;
+        NS_ABORT_MSG_UNLESS(P.crossLoad < onShareOfLink,
+                            "--crossLoad must be below " << onShareOfLink);
+        const double duty = P.crossLoad / onShareOfLink;
         const uint16_t port = 9000;
         PacketSinkHelper udpSink("ns3::UdpSocketFactory",
                                  InetSocketAddress(Ipv4Address::GetAny(), port));
         udpSink.Install(crossSink).Start(Seconds(0.0));
 
         OnOffHelper onoff("ns3::UdpSocketFactory", InetSocketAddress(crossSinkAddr, port));
-        onoff.SetConstantRate(DataRate(Rate(2 * P.crossLoad * P.bwMbps)), 1400);
-        onoff.SetAttribute("OnTime", StringValue("ns3::ExponentialRandomVariable[Mean=0.5]"));
-        onoff.SetAttribute("OffTime", StringValue("ns3::ExponentialRandomVariable[Mean=0.5]"));
+        onoff.SetConstantRate(DataRate(Rate(onShareOfLink * P.bwMbps)), 1400);
+        std::ostringstream onTime;
+        std::ostringstream offTime;
+        onTime << "ns3::ExponentialRandomVariable[Mean=" << duty << "]";
+        offTime << "ns3::ExponentialRandomVariable[Mean=" << 1.0 - duty << "]";
+        onoff.SetAttribute("OnTime", StringValue(onTime.str()));
+        onoff.SetAttribute("OffTime", StringValue(offTime.str()));
         ApplicationContainer a = onoff.Install(crossSrc);
         a.Start(Seconds(1.0));
         a.Stop(Seconds(P.duration));
