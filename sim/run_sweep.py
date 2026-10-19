@@ -29,10 +29,12 @@ PRESETS = {
         bw=[100], rtt=[50], loss=[0.0, 0.02], buffer=[1.0], flows=[1],
         crossLoad=[0.3], crossTcp=[0], seed=[1], duration=[5],
     ),
-    # Training data: CUBIC behaviour, features logged at every loss.
+    # Training data, features logged at every loss. Half the runs behave like
+    # CUBIC, half like an ideal LossLens (oracle): the classifier must work in
+    # the conditions it creates itself (large windows, queues that build).
     "dataset": dict(
         out="data",
-        algos=[("TcpLossAware", "cubic")],
+        algos=[("TcpLossAware", "cubic"), ("TcpLossAware", "oracle")],
         bw=[50, 100, 500], rtt=[20, 50, 150],
         loss=[0.0, 0.001, 0.005, 0.01, 0.02, 0.05],
         buffer=[0.5, 1.0, 2.0], flows=[1, 2],
