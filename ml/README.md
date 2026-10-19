@@ -1,4 +1,4 @@
-# ml/ (Member 2: data and ML)
+# ml/: data and ML
 
 | File | What it does |
 |---|---|
@@ -22,8 +22,8 @@ python ml/export_tree.py      # then rebuild ns-3
 
 ## Checklist
 
-- [ ] Week 1: literature review (Biaz & Vaidya, Spike/ZigZag, TCP Veno, Westwood+, ML-based loss differentiation)
+- [ ] Week 1: (literature review moved to the documentation team)
 - [ ] Week 2: run `train.py` on Member 1's first small dataset; review the feature list together
 - [ ] Week 3: full training; compare tree / forest / MLP; per-scenario accuracy (group by `meta_*`)
-- [ ] Week 4: pick the final depth (≤ 6), export it, hand it to Member 3
+- [ ] Week 4: pick the final depth (≤ 6), export it
 - [ ] Weeks 5–6: confusion matrix, feature importance, ablation (drop one feature at a time, vary depth)

@@ -80,7 +80,7 @@ void
 TcpLossAware::PktsAcked(Ptr<TcpSocketState> tcb, uint32_t segmentsAcked, const Time& rtt)
 {
     TcpCubic::PktsAcked(tcb, segmentsAcked, rtt);
-    // TODO(Member 3): check in tcp-socket-base.cc whether `rtt` is a fresh sample
+    // TODO: check in tcp-socket-base.cc whether `rtt` is a fresh sample
     // for every call or the last known value; if repeated, skip duplicates here.
     m_features.OnAck(Simulator::Now(), segmentsAcked * tcb->m_segmentSize, rtt);
 }
@@ -92,7 +92,7 @@ TcpLossAware::CongestionStateSet(Ptr<TcpSocketState> tcb,
     TcpCubic::CongestionStateSet(tcb, newState);
     // ns-3 calls this before GetSsThresh() when entering CA_RECOVERY / CA_LOSS,
     // so m_lastState tells GetSsThresh() whether the event is a timeout.
-    // TODO(Member 3): confirm this order for your ns-3 version.
+    // TODO: confirm this order for your ns-3 version.
     m_lastState = newState;
 }
 
@@ -135,7 +135,7 @@ TcpLossAware::GetSsThresh(Ptr<const TcpSocketState> tcb, uint32_t bytesInFlight)
 
     // Safety fallback: several "random" decisions in a row while RTT keeps
     // rising probably means the classifier is wrong and a queue is building.
-    // TODO(Member 3): tune this rule in week 4.
+    // TODO: tune this rule in week 4.
     if (!congestion)
     {
         m_consecutiveRandom++;
@@ -158,7 +158,7 @@ TcpLossAware::GetSsThresh(Ptr<const TcpSocketState> tcb, uint32_t bytesInFlight)
         return TcpCubic::GetSsThresh(tcb, bytesInFlight);
     }
     // Random loss: keep (most of) the window.
-    // TODO(Member 3): TcpCubic's internal state (W_max, epoch) is not updated on
+    // TODO: TcpCubic's internal state (W_max, epoch) is not updated on
     // this path; check that the window growth afterwards behaves sensibly.
     uint32_t target = static_cast<uint32_t>(tcb->m_cWnd.Get() * m_randomLossBeta);
     return std::max(target, 2 * tcb->m_segmentSize);

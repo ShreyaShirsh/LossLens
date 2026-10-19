@@ -1,4 +1,4 @@
-// Simulator ground truth: why was each packet dropped? (owner: Member 1)
+// Simulator ground truth: why was each packet dropped?
 //
 // The scenario records every dropped data segment of a monitored flow here:
 //   - dropped by the bottleneck queue   -> CONGESTION

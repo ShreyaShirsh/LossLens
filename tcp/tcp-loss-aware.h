@@ -1,5 +1,4 @@
 // TcpLossAware: CUBIC that only backs off on losses classified as congestion.
-// Owner: Member 3.
 #ifndef TCP_LOSS_AWARE_H
 #define TCP_LOSS_AWARE_H
 

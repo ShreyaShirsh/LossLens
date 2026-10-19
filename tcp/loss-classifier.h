@@ -1,4 +1,4 @@
-// Interface between Member 2 (ML) and Member 3 (TCP).
+// Interface between the ML pipeline and TcpLossAware.
 // The implementation lives in generated-tree.cc, which ml/export_tree.py overwrites.
 #ifndef LOSS_CLASSIFIER_H
 #define LOSS_CLASSIFIER_H

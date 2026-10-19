@@ -1,4 +1,4 @@
-"""Evaluation plots (owner: Member 3).
+"""Evaluation plots.
 
     python eval/plot_results.py --bw 100 --rtt 50
     python eval/plot_results.py --ts results/ts_<run_tag>.csv
@@ -81,7 +81,7 @@ def main():
         df = df[df.meta_rtt_ms == args.rtt]
     df["algo"] = df.apply(algo_name, axis=1)
     throughput_vs_loss(df, out)
-    # TODO(Member 3): fairness (Jain) vs buffer size, classifier confusion matrix, RTT CDF.
+    # TODO: fairness (Jain) vs buffer size, classifier confusion matrix, RTT CDF.
 
 
 if __name__ == "__main__":

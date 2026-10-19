@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run a grid of loss-diff-sim scenarios in parallel (owner: Member 1).
+"""Run a grid of loss-diff-sim scenarios in parallel.
 
 Run inside WSL after building the simulator:
     python3 sim/run_sweep.py --ns3 ~/ns-3 --preset quick
@@ -29,7 +29,7 @@ PRESETS = {
         bw=[100], rtt=[50], loss=[0.0, 0.02], buffer=[1.0], flows=[1],
         crossLoad=[0.3], crossTcp=[0], seed=[1], duration=[5],
     ),
-    # Training data for Member 2: CUBIC behaviour, features logged at every loss.
+    # Training data: CUBIC behaviour, features logged at every loss.
     "dataset": dict(
         out="data",
         algos=[("TcpLossAware", "cubic")],
@@ -38,7 +38,7 @@ PRESETS = {
         buffer=[0.5, 1.0, 2.0], flows=[1, 2],
         crossLoad=[0.0, 0.3, 0.6], crossTcp=[0, 1], seed=[1], duration=[20],
     ),
-    # Final comparison for Member 3.
+    # Final comparison.
     "eval": dict(
         out="results",
         algos=[("TcpNewReno", ""), ("TcpCubic", ""), ("TcpWestwoodPlus", ""),

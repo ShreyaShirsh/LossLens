@@ -1,5 +1,5 @@
 /*
- * Loss-differentiation testbed (owner: Member 1).
+ * Loss-differentiation testbed.
  *
  *   sender ───access──┐                       ┌──wireless (lossy)── receiver
  *                     router ══bottleneck══ ap
@@ -10,8 +10,8 @@
  *
  * Every dropped data segment of a monitored flow is recorded in GroundTruth.
  * With --tcp=TcpLossAware, one CSV row is written per loss event
- * (features + true label) for Member 2. Every run also writes a summary CSV
- * (goodput, RTT, drops) for Member 3. Formats: docs/interfaces.md.
+ * (features + true label) for training. Every run also writes a summary CSV
+ * (goodput, RTT, drops) for evaluation. Formats: docs/interfaces.md.
  */
 
 #include "ground-truth.h"

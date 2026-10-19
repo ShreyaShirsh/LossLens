@@ -25,40 +25,40 @@ wireless error), which gives us labelled training data for free.
 ## Repository layout
 
 ```
-common/   Shared C++: feature extractor, simulator ground truth     (Members 1 + 3)
-sim/      ns-3 scenario, drop labelling, experiment sweeps           (Member 1)
-ml/       Dataset loading, training, export of the tree to C++       (Member 2)
-tcp/      TcpLossAware congestion control + generated classifier     (Member 3)
-eval/     Plots and analysis of experiment results                   (Member 3)
+common/   Shared C++: feature extractor, simulator ground truth
+sim/      ns-3 scenario, drop labelling, experiment sweeps
+ml/       Dataset loading, training, export of the tree to C++
+tcp/      TcpLossAware congestion control + generated classifier
+eval/     Plots and analysis of experiment results
 data/     Feature CSVs written by the simulator (git-ignored)
 results/  Experiment summaries and plots (git-ignored)
-docs/     Setup guide and the interfaces between members
-report/   Report outline
+docs/     Setup guide and the file formats between components
+report/   Report outline and documentation tasks
 scripts/  Helper scripts
 ```
 
 ## Team
 
-| Member | Role | Owns |
+| Member | Role | Responsible for |
 |---|---|---|
-| **Member 1** | Simulation and network | `sim/`, `common/ground-truth.*`, running all experiments |
-| **Member 2** | Data and ML | `ml/` (features list, training, tree export) |
-| **Member 3** | TCP and evaluation | `tcp/`, `eval/`, `common/loss-features.*` |
+| **Member 1** | Development | All code: simulation, ML, TCP, experiments, plots |
+| **Member 2** | Documentation | Literature review, introduction, related work, simulation setup and classifier chapters |
+| **Member 3** | Documentation | Design chapter, results write-up, diagrams, slides, final formatting |
 
-Each folder has a README with that member's task checklist.
+Documentation tasks are listed in [report/outline.md](report/outline.md).
 
 ## Plan
 
-| Week | Member 1 (Simulation) | Member 2 (ML) | Member 3 (TCP + eval) |
-|---|---|---|---|
-| 1 | Setup, topology builds and runs | Literature review, feature list | Study ns-3 TCP internals, run baselines |
-| 2 | Drop labelling verified, first dataset to M2 | Training pipeline on first dataset | Oracle mode of `TcpLossAware` working |
-| 3 | Full scenario sweep → dataset | Train tree / forest / MLP, tune congestion recall | Measure oracle gain over CUBIC |
-| 4 | Reusable experiment runner | Export tree to C++ | Integrate tree, tune safety fallback |
-| 5 | Run all comparisons | Classifier analysis | Plotting scripts |
-| 6 | Fairness + pure-congestion runs | Ablation study | Results analysis, bug fixes |
-| 7 | Report: setup + method | Report: related work + classifier | Report: TCP design + results |
-| 8 | Live demo | Slides | Final integration |
+| Week | Development (Member 1) | Documentation (Members 2 + 3) |
+|---|---|---|
+| 1 | Setup, simulator builds and runs ✅ | Literature review; agree report template |
+| 2 | Labelling checks, oracle mode, first dataset | Introduction + related work drafts; topology diagram |
+| 3 | Full scenario sweep, classifier training | Simulation setup chapter (from sim/README + docs) |
+| 4 | Export tree, integrate into TCP, tune fallback | Design chapter (architecture, TcpLossAware) |
+| 5 | Run all comparisons + plots | Classifier chapter (features, training, threshold) |
+| 6 | Fairness + safety runs, ablation | Results chapter from the plots; discussion |
+| 7 | Bug fixes, final numbers, review report | Abstract, conclusion, slides |
+| 8 | Live demo | Final formatting, references, rehearsal |
 
 ## Quick start
 
@@ -75,10 +75,9 @@ Each folder has a README with that member's task checklist.
 
 ## Working rules
 
-- The contracts between members are in [docs/interfaces.md](docs/interfaces.md).
-  Change them only when all three agree.
-- One branch per task (`m1/topology`, `m2/train`, `m3/oracle`, ...), merged by pull request.
-- Short weekly sync to check the hand-offs.
+- File formats between the code components are in [docs/interfaces.md](docs/interfaces.md).
+- Documentation members: read the folder READMEs and docs/ for technical details, and
+  ask Member 1 before describing anything that isn't written down.
+- Report numbers and figures come only from `results/` runs, never typed in by hand.
 
-**Status:** skeleton. In week 1 everyone's first job is to get the smoke test
-(step 2) to build and run.
+**Status:** simulator builds and runs on ns-3.49 (week 1 done).

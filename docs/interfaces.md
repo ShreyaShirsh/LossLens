@@ -1,9 +1,8 @@
-# Interfaces between members
+# Interfaces between components
 
-These are the hand-offs between the three parts of the project. Change them only
-when all three members agree, and update the code on both sides in the same pull request.
+These are the file formats and interfaces between the code components.
 
-## 1. Feature dataset (Member 1 → Member 2)
+## 1. Feature dataset (simulator → ML)
 
 **File:** `data/features_<run_tag>.csv`, written by `sim/loss-diff-sim.cc` when
 `--tcp=TcpLossAware --logFeatures=1`. One row per **loss event** (each time TCP
@@ -38,7 +37,7 @@ The same C++ code computes the features for logging and inside TCP at run time.
 To add or change a feature: edit `common/loss-features.*`, `ml/features.py` and this
 table, then regenerate the dataset.
 
-## 3. Classifier (Member 2 → Member 3)
+## 3. Classifier (ML → TCP)
 
 ```cpp
 // tcp/loss-classifier.h
@@ -48,7 +47,7 @@ bool IsCongestionLossTree(const LossFeatures& f);   // true = congestion
 Implemented in `tcp/generated-tree.cc`, which **`ml/export_tree.py` generates**. Don't
 edit it by hand. Until a model exists, the placeholder returns `true` (plain CUBIC).
 
-## 4. Experiment outputs (Member 1 → Member 3)
+## 4. Experiment outputs (simulator → evaluation)
 
 **Run tag:** `<tcp>[-<classifier>]_bw<Mbps>_rtt<ms>_loss<rate>_buf<xBDP>_f<flows>_x<crossLoad>_t<crossTcp>_s<seed>`,
 for example `TcpLossAware-tree_bw100_rtt50_loss0.01_buf1_f1_x0.3_t0_s1`.

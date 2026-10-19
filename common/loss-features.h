@@ -1,4 +1,4 @@
-// Sender-side loss features (owners: Member 3, with Member 1).
+// Sender-side loss features.
 //
 // The same extractor is used for data logging and for run-time classification
 // inside TcpLossAware, so the model sees exactly the same numbers in training

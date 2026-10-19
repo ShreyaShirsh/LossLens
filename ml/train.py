@@ -1,4 +1,4 @@
-"""Train loss classifiers on the simulator's feature logs (owner: Member 2).
+"""Train loss classifiers on the simulator's feature logs.
 
     python ml/train.py                      # uses data/features_*.csv
     python ml/train.py --max-depth 4 --target-recall 0.97
@@ -29,7 +29,7 @@ REPO = ML_DIR.parent
 def load(pattern: str, include_rto: bool) -> pd.DataFrame:
     files = sorted(glob.glob(pattern))
     if not files:
-        raise SystemExit(f"No files match {pattern}. Ask Member 1 for data "
+        raise SystemExit(f"No files match {pattern}. Generate data first "
                          "(sim/run_sweep.py --preset dataset).")
     df = pd.concat((pd.read_csv(f) for f in files), ignore_index=True)
     total = len(df)

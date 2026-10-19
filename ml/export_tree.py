@@ -1,4 +1,4 @@
-"""Export the trained decision tree to C++ (owner: Member 2).
+"""Export the trained decision tree to C++.
 
     python ml/export_tree.py            # ml/models/tree.joblib -> tcp/generated-tree.cc
 

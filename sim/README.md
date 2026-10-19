@@ -1,10 +1,10 @@
-# sim/ (Member 1: simulation and network)
+# sim/: simulation and network
 
 | File | What it does |
 |---|---|
 | `loss-diff-sim.cc` | ns-3 scenario: topology, cross traffic, drop labelling, CSV output |
 | `run_sweep.py` | Runs many scenarios in parallel (`quick`, `dataset`, `eval`, `fairness` presets) |
-| `../common/ground-truth.*` | Records why each packet was dropped; also owned by Member 1 |
+| `../common/ground-truth.*` | Records why each packet was dropped |
 
 ## How the labelling works
 
@@ -28,15 +28,15 @@
   - `--loss=0 --crossLoad=0.6` → all labels should be 1
   - `--loss=0.02 --crossLoad=0 --buffer=4` → mostly 0
   - Fraction of `label = -1` rows below ~5%. If it is higher, find where else packets are dropped
-- [ ] Together with Member 2: check the feature values look sensible
-- [ ] Send Member 2 a first small dataset (`run_sweep.py --preset dataset --sample 50`)
+- [ ] Check the feature values look sensible
+- [ ] Generate a first small dataset (`run_sweep.py --preset dataset --sample 50`)
 
 **Week 3**
 - [ ] Time one run at 500 Mbps / 20 s, then size the grid in `run_sweep.py`
 - [ ] Generate the full dataset into `data/`
 
 **Weeks 4–6**
-- [ ] Run the `eval` and `fairness` presets once Member 3's tree integration works
+- [ ] Run the `eval` and `fairness` presets once the tree is integrated
 - [ ] Optional: replace the point-to-point "wireless" hop with real ns-3 Wi-Fi for extra realism
 
 ## Known limitations

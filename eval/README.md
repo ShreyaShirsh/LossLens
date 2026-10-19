@@ -1,4 +1,4 @@
-# eval/ (Member 3)
+# eval/: evaluation plots
 
 `plot_results.py` reads `results/summary_*.csv` and `results/ts_*.csv` and writes plots to
 `results/plots/`. Column formats are in `docs/interfaces.md`.
