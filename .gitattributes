@@ -1,0 +1,5 @@
+# The code runs inside WSL/Linux: keep LF line endings even on Windows checkouts,
+# otherwise bash scripts fail with "\r: command not found".
+* text=auto eol=lf
+*.png binary
+*.pdf binary
