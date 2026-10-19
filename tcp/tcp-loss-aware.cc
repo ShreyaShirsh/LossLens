@@ -87,22 +87,17 @@ TcpLossAware::PktsAcked(Ptr<TcpSocketState> tcb, uint32_t segmentsAcked, const T
     // While recovering from a random loss, keep growing. ns-3 does not call
     // IncreaseWindow() during recovery, and at ~1% loss TCP is recovering most
     // of the time, so the window would stall. PRR lets the sender fill up to
-    // ssthresh, and cwnd = ssthresh when recovery ends, so we grow ssthresh.
+    // ssthresh, and cwnd = ssthresh when recovery ends, so we grow ssthresh at
+    // CUBIC's own congestion-avoidance pace (never slow start: HyStart can't
+    // protect us inside recovery).
     if (m_restoreSsThresh && tcb->m_congState == TcpSocketState::CA_RECOVERY &&
         segmentsAcked > 0)
     {
-        uint32_t bytes = segmentsAcked * tcb->m_segmentSize;
-        uint32_t ssThresh = tcb->m_ssThresh.Get();
-        if (m_savedSsThresh > ssThresh)
-        {
-            ssThresh += bytes; // was in slow start: keep doubling per RTT
-        }
-        else
-        {
-            // congestion avoidance: about one segment per RTT
-            ssThresh += std::max<uint32_t>(1, bytes * tcb->m_segmentSize / ssThresh);
-        }
-        tcb->m_ssThresh = ssThresh;
+        uint32_t cwnd = tcb->m_cWnd.Get();
+        tcb->m_cWnd = tcb->m_ssThresh.Get(); // cwnd == ssthresh: CUBIC takes its CA branch
+        TcpCubic::IncreaseWindow(tcb, segmentsAcked);
+        tcb->m_ssThresh = tcb->m_cWnd.Get();
+        tcb->m_cWnd = cwnd;
     }
 }
 
