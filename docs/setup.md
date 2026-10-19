@@ -2,7 +2,7 @@
 
 ns-3 runs on Linux, so on Windows we use **WSL2 with Ubuntu**. Everyone should use
 the **same ns-3 release** so the code builds the same way on every machine.
-Agree on one release in week 1 and write it here: `ns-3.__`.
+Team release: **`ns-3.49`**.
 
 ## 1. Install WSL2 (Windows, once)
 
@@ -28,8 +28,7 @@ Keep ns-3 in the Linux home folder (`~/ns-3`). Building on `/mnt/c` or `/mnt/d` 
 ```bash
 git clone https://gitlab.com/nsnam/ns-3-dev.git ~/ns-3
 cd ~/ns-3
-git tag -l "ns-3.4*"          # list releases; check out the one the team agreed on
-git checkout ns-3.XX
+git checkout ns-3.49
 ./ns3 configure --build-profile=optimized --disable-examples --disable-tests \
     --enable-modules="core;network;internet;point-to-point;applications;traffic-control"
 ./ns3 build

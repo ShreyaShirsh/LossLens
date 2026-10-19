@@ -169,7 +169,8 @@ class BulkFlow : public Application
 void
 RecordTcpDrop(Ptr<Packet> p, const Ipv4Header& ip, LossType type)
 {
-    if (ip.GetProtocol() != TcpL4Protocol::PROT_NUMBER || ip.GetSource() != g_senderAddr)
+    constexpr uint8_t kIpProtoTcp = 6; // IANA protocol number for TCP
+    if (ip.GetProtocol() != kIpProtoTcp || ip.GetSource() != g_senderAddr)
     {
         return;
     }
