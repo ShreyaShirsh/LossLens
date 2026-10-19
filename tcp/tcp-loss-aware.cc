@@ -83,6 +83,27 @@ TcpLossAware::PktsAcked(Ptr<TcpSocketState> tcb, uint32_t segmentsAcked, const T
     // TODO: check in tcp-socket-base.cc whether `rtt` is a fresh sample
     // for every call or the last known value; if repeated, skip duplicates here.
     m_features.OnAck(Simulator::Now(), segmentsAcked * tcb->m_segmentSize, rtt);
+
+    // While recovering from a random loss, keep growing. ns-3 does not call
+    // IncreaseWindow() during recovery, and at ~1% loss TCP is recovering most
+    // of the time, so the window would stall. PRR lets the sender fill up to
+    // ssthresh, and cwnd = ssthresh when recovery ends, so we grow ssthresh.
+    if (m_restoreSsThresh && tcb->m_congState == TcpSocketState::CA_RECOVERY &&
+        segmentsAcked > 0)
+    {
+        uint32_t bytes = segmentsAcked * tcb->m_segmentSize;
+        uint32_t ssThresh = tcb->m_ssThresh.Get();
+        if (m_savedSsThresh > ssThresh)
+        {
+            ssThresh += bytes; // was in slow start: keep doubling per RTT
+        }
+        else
+        {
+            // congestion avoidance: about one segment per RTT
+            ssThresh += std::max<uint32_t>(1, bytes * tcb->m_segmentSize / ssThresh);
+        }
+        tcb->m_ssThresh = ssThresh;
+    }
 }
 
 void
