@@ -60,6 +60,7 @@ class TcpLossAware : public TcpCubic
     uint32_t m_flowId{0};
     double m_randomLossBeta{1.0};
     uint32_t m_maxConsecutiveRandom{3};
+    double m_fallbackSrttRatio{1.2};
 
     // State
     LossFeatureExtractor m_features;

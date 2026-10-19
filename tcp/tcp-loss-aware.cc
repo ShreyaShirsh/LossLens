@@ -47,6 +47,12 @@ TcpLossAware::GetTypeId()
                           UintegerValue(3),
                           MakeUintegerAccessor(&TcpLossAware::m_maxConsecutiveRandom),
                           MakeUintegerChecker<uint32_t>())
+            .AddAttribute("FallbackSrttRatio",
+                          "Smoothed RTT / min RTT above which the safety fallback "
+                          "considers a queue to be building",
+                          DoubleValue(1.2),
+                          MakeDoubleAccessor(&TcpLossAware::m_fallbackSrttRatio),
+                          MakeDoubleChecker<double>(1.0))
             .AddTraceSource("LossEvent",
                             "Fired once per loss event with its features and the decision",
                             MakeTraceSourceAccessor(&TcpLossAware::m_lossEventTrace),
@@ -65,7 +71,8 @@ TcpLossAware::TcpLossAware(const TcpLossAware& sock)
       m_classifier(sock.m_classifier),
       m_flowId(sock.m_flowId),
       m_randomLossBeta(sock.m_randomLossBeta),
-      m_maxConsecutiveRandom(sock.m_maxConsecutiveRandom)
+      m_maxConsecutiveRandom(sock.m_maxConsecutiveRandom),
+      m_fallbackSrttRatio(sock.m_fallbackSrttRatio)
 {
     NS_LOG_FUNCTION(this);
 }
@@ -149,13 +156,16 @@ TcpLossAware::GetSsThresh(Ptr<const TcpSocketState> tcb, uint32_t bytesInFlight)
     // Timeouts are always treated as congestion.
     bool congestion = info.isRto || Classify(info.features);
 
-    // Safety fallback: several "random" decisions in a row while RTT keeps
-    // rising probably means the classifier is wrong and a queue is building.
-    // TODO: tune this rule in week 4.
-    if (!congestion)
+    // Safety fallback for the trained classifier: several "random" decisions in
+    // a row while a queue is clearly building (RTT well above its minimum and
+    // still rising) means the classifier is probably wrong. A rising RTT alone
+    // is not enough: jitter makes it "rise" about half the time.
+    // The oracle is ground truth, so it is never overruled.
+    if (!congestion && m_classifier == "tree")
     {
         m_consecutiveRandom++;
-        if (m_consecutiveRandom > m_maxConsecutiveRandom && info.features.rtt_gradient > 0.0)
+        if (m_consecutiveRandom > m_maxConsecutiveRandom &&
+            info.features.srtt_ratio > m_fallbackSrttRatio && info.features.rtt_gradient > 0.0)
         {
             congestion = true;
         }

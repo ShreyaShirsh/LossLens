@@ -18,8 +18,12 @@
 
 - Timeouts (RTO) are always treated as congestion.
 - Losses classified as random multiply cwnd by `RandomLossBeta` (default 1.0 = no cut).
-- **Safety fallback:** after more than `MaxConsecutiveRandom` random decisions in a row
-  while the RTT is rising, the loss is treated as congestion anyway.
+- **Safety fallback** (`tree` mode only): after more than `MaxConsecutiveRandom` random
+  decisions in a row, if the smoothed RTT is above `FallbackSrttRatio` x min RTT and still
+  rising, the loss is treated as congestion anyway.
+- **Growth during random-loss recovery:** ns-3 does not grow cwnd during recovery, so
+  TcpLossAware grows ssthresh at CUBIC's pace instead; PRR and the cwnd = ssthresh rule at
+  recovery exit turn that into window growth. The pre-loss ssthresh is restored afterwards.
 
 ## Checklist
 
