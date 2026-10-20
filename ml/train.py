@@ -57,7 +57,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--data", default=str(REPO / "data" / "features_*.csv"))
     ap.add_argument("--max-depth", type=int, default=6)
-    ap.add_argument("--target-recall", type=float, default=0.95)
+    ap.add_argument("--target-recall", type=float, default=0.90)
     ap.add_argument("--include-rto", action="store_true")
     args = ap.parse_args()
 
@@ -65,10 +65,17 @@ def main():
     if df[LABEL_COLUMN].nunique() < 2:
         raise SystemExit("Need both congestion and random losses in the data.")
 
+    # Three disjoint sets of runs: fit on train, pick the threshold on val,
+    # report on test. Tuning the threshold on the training rows overfits it.
     split = GroupShuffleSplit(n_splits=1, test_size=0.25, random_state=0)
-    train_idx, test_idx = next(split.split(df, groups=df[GROUP_COLUMN]))
-    train, test = df.iloc[train_idx], df.iloc[test_idx]
+    rest_idx, test_idx = next(split.split(df, groups=df[GROUP_COLUMN]))
+    rest, test = df.iloc[rest_idx], df.iloc[test_idx]
+    train_idx, val_idx = next(split.split(rest, groups=rest[GROUP_COLUMN]))
+    train, val = rest.iloc[train_idx], rest.iloc[val_idx]
+    print(f"runs: train {train[GROUP_COLUMN].nunique()}, val {val[GROUP_COLUMN].nunique()}, "
+          f"test {test[GROUP_COLUMN].nunique()}")
     X_train, y_train = train[FEATURE_COLUMNS], train[LABEL_COLUMN]
+    X_val, y_val = val[FEATURE_COLUMNS], val[LABEL_COLUMN]
     X_test, y_test = test[FEATURE_COLUMNS], test[LABEL_COLUMN]
 
     models = {
@@ -82,11 +89,11 @@ def main():
     }
 
     results = {}
+    summary = []
     for name, model in models.items():
         model.fit(X_train, y_train)
         cong_col = list(model.classes_).index(CONGESTION)
-        # Threshold is tuned on training data, then checked on the held-out runs.
-        t = threshold_for_recall(y_train, model.predict_proba(X_train)[:, cong_col],
+        t = threshold_for_recall(y_val, model.predict_proba(X_val)[:, cong_col],
                                  args.target_recall)
         y_pred = (model.predict_proba(X_test)[:, cong_col] >= t).astype(int)
         results[name] = (model, t)
@@ -94,6 +101,12 @@ def main():
         print(confusion_matrix(y_test, y_pred, labels=[CONGESTION, 0]))
         print(classification_report(y_test, y_pred, labels=[CONGESTION, 0],
                                     target_names=["congestion", "random"], digits=3))
+        summary.append((name, recall_score(y_test, y_pred, pos_label=CONGESTION),
+                        recall_score(y_test, y_pred, pos_label=0), (y_pred == y_test).mean()))
+
+    print("\nTest runs        congestion caught   random ignored   accuracy")
+    for name, cong, rand, acc in summary:
+        print(f"  {name:8s}       {cong:16.1%}  {rand:15.1%}  {acc:9.1%}")
 
     tree, t = results["tree"]
     print("Tree feature importance:")

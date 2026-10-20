@@ -17,7 +17,8 @@ python ml/export_tree.py      # then rebuild ns-3
 - **Split by run, not by row.** Rows from the same simulation run are highly correlated;
   `train.py` uses `GroupShuffleSplit` on `meta_run_tag` so test runs are unseen.
 - **Congestion recall matters most.** Calling a congestion loss "random" makes the flow
-  keep pushing into a full queue. The threshold is tuned so congestion recall ≥ 0.95.
+  keep pushing into a full queue. The threshold is tuned on separate validation runs so
+  congestion recall ≥ 0.90 (0.95 halves the random losses ignored; deeper trees than 6 overfit).
 - **Never use `meta_*` columns as features.** The sender can't observe them.
 
 ## Checklist
