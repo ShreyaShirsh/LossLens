@@ -2,6 +2,7 @@
 
     python eval/demo_plot.py              # default 1% loss
     python eval/demo_plot.py --loss 0.02
+    python eval/demo_plot.py --loss 0.01 --seed 7
 
 Writes results/plots/demo_<loss>.png.
 """
@@ -19,8 +20,8 @@ DEMO = REPO / "results" / "demo"
 SEGMENT = 1448  # bytes
 
 
-def load(classifier: str, loss: str):
-    tag = f"TcpLossAware-{classifier}_bw100_rtt50_loss{loss}_buf1_f1_x0_t0_s1"
+def load(classifier: str, loss: str, seed: str):
+    tag = f"TcpLossAware-{classifier}_bw100_rtt50_loss{loss}_buf1_f1_x0_t0_s{seed}"
     ts = pd.read_csv(DEMO / f"ts_{tag}.csv")
     goodput = pd.read_csv(DEMO / f"summary_{tag}.csv").goodput_mbps.iloc[0]
     # Sending rate implied by the window: cwnd per round trip.
@@ -31,12 +32,13 @@ def load(classifier: str, loss: str):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--loss", default="0.01", help="loss rate used in scripts/demo.sh")
+    ap.add_argument("--seed", default="1", help="seed used in scripts/demo.sh")
     args = ap.parse_args()
 
     runs = {"Normal TCP (CUBIC)": ("cubic", "#4c72b0"), "LossLens": ("tree", "#c44e52")}
     fig, (top, bottom) = plt.subplots(2, 1, figsize=(10, 6), sharex=True)
     for name, (classifier, color) in runs.items():
-        ts, goodput = load(classifier, args.loss)
+        ts, goodput = load(classifier, args.loss, args.seed)
         label = f"{name}: {goodput:.1f} Mbps average"
         top.plot(ts.time, ts.rate_mbps.clip(upper=150), color=color, label=label)
         bottom.plot(ts.time, ts.cwnd_bytes / SEGMENT, color=color)
@@ -49,7 +51,8 @@ def main():
     loss_pct = float(args.loss) * 100
     fig.suptitle(f"Same link, {loss_pct:g}% random wireless loss: "
                  "CUBIC slows down at every loss, LossLens keeps going")
-    out = REPO / "results" / "plots" / f"demo_{args.loss}.png"
+    suffix = "" if args.seed == "1" else f"_s{args.seed}"
+    out = REPO / "results" / "plots" / f"demo_{args.loss}{suffix}.png"
     fig.savefig(out, dpi=150, bbox_inches="tight")
     print(f"Wrote {out}")
 
