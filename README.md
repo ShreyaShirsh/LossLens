@@ -39,8 +39,10 @@ Mean of 3 runs of 30 s, with bursty background traffic using 30% of the link on 
 
 - **Oracle** (perfect loss classification) brings CUBIC back to its loss-free speed
   (34.6 / 42.3 Mbps); the trained decision tree recovers about 70% of that.
-- **Safe:** under pure congestion LossLens behaves exactly like CUBIC.
-- **BBR** is faster here but takes up to 3.5× its fair share from CUBIC users.
+- **Safe and fair:** under pure congestion LossLens behaves exactly like CUBIC, and when it
+  shares a link with CUBIC users it takes exactly the same share CUBIC would (1.00 of a
+  fair share against one CUBIC flow, 60 s runs, equal start).
+- **BBR** is faster here but takes up to 3.9× its fair share from CUBIC users.
 - **Limitation:** when other TCP flows keep the bottleneck queue full, the delay clues
   always look like congestion and LossLens falls back to plain CUBIC.
 
