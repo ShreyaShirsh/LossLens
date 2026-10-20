@@ -66,9 +66,9 @@ scripts/  Helper scripts
 
 | Member | Role | Responsible for |
 |---|---|---|
-| **Member 1** | Development | All code: simulation, ML, TCP, experiments, plots |
-| **Member 2** | Documentation | Literature review, introduction, related work, simulation setup and classifier chapters |
-| **Member 3** | Documentation | Design chapter, results write-up, diagrams, slides, final formatting |
+| **Member 1**: [@ShreyaShirsh](https://github.com/ShreyaShirsh) | Development | All code: simulation, ML, TCP, experiments, plots |
+| **Member 2**: Avani Abhay Chaudhary | Documentation | Literature review, introduction, related work, simulation setup and classifier chapters |
+| **Member 3**: Arpita Sinha | Documentation | Design chapter, results write-up, diagrams, slides, final formatting |
 
 Documentation tasks are listed in [report/outline.md](report/outline.md).
 

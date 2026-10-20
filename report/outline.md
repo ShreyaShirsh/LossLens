@@ -3,6 +3,8 @@
 **Title:** LossLens: Learning-Based Loss Differentiation for Adaptive TCP Congestion Control
 in High-Speed Wireless Networks
 
+**Team:** Member 1 = [@ShreyaShirsh](https://github.com/ShreyaShirsh) · Member 2 = Avani Abhay Chaudhary · Member 3 = Arpita Sinha
+
 **Roles:** Member 1 writes all the code and runs the experiments. Members 2 and 3 write
 the documentation. Member 1 reviews every chapter for technical accuracy.
 
