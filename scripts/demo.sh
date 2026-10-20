@@ -73,12 +73,18 @@ awk -v a="$lens" -v b="$cubic" -v bw="$BW" 'BEGIN{
 echo
 echo "Replay this exact run:  bash scripts/demo.sh ~/ns-3 replay $BW $RTT $LOSS $CROSS $BUFFER $SEED"
 
-# Draw the before/after graph and open it in Windows' image viewer.
+# Draw the before/after graph (Ubuntu's Python if it has the libraries, otherwise
+# Windows' Python) and open it in Windows' image viewer.
 if python3 -c "import pandas, matplotlib" 2>/dev/null; then
-    python3 "$REPO_DIR/eval/demo_plot.py" > /dev/null
+    python3 "$REPO_DIR/eval/demo_plot.py" > /dev/null && plotted=1 || plotted=0
+elif command -v python.exe > /dev/null; then
+    python.exe "$(wslpath -w "$REPO_DIR/eval/demo_plot.py")" > /dev/null && plotted=1 || plotted=0
+else
+    plotted=0
+fi
+if [ "$plotted" = 1 ]; then
     echo "Graph: results/demo/demo.png"
     explorer.exe "$(wslpath -w "$OUT/demo.png")" 2>/dev/null || true
 else
-    echo "Graph: install the plotting libraries once with"
-    echo "  sudo apt install -y python3-pandas python3-matplotlib"
+    echo "Graph: run  python eval/demo_plot.py  from a Windows terminal in the project folder"
 fi
