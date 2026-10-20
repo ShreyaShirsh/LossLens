@@ -104,6 +104,7 @@ std::string g_meta;
 Ipv4Address g_senderAddr;
 std::map<uint16_t, uint32_t> g_portToFlow;
 std::vector<FlowState> g_flows;
+std::vector<Ptr<PacketSink>> g_crossSinks; // competing CUBIC flows, for fairness
 std::ofstream g_featureCsv;
 std::ofstream g_tsCsv;
 
@@ -325,9 +326,19 @@ WriteSummary(const std::string& path)
     }
     double jain = sumSq > 0 ? (sum * sum) / (goodput.size() * sumSq) : 0.0;
 
+    // Mean goodput of the competing CUBIC flows (same on every row).
+    double crossTcp = 0.0;
+    for (std::size_t j = 0; j < g_crossSinks.size(); ++j)
+    {
+        double active = std::max(1e-9, P.duration - (0.2 + 0.1 * j));
+        crossTcp += g_crossSinks[j]->GetTotalRx() * 8.0 / active / 1e6;
+    }
+    crossTcp = g_crossSinks.empty() ? 0.0 : crossTcp / g_crossSinks.size();
+
     std::ofstream out(path);
     out << SimParams::MetaHeader()
-        << ",flow_id,goodput_mbps,mean_rtt_ms,p95_rtt_ms,loss_events,cong_drops,rand_drops,jain\n";
+        << ",flow_id,goodput_mbps,mean_rtt_ms,p95_rtt_ms,loss_events,cong_drops,rand_drops,jain,"
+           "cross_tcp_mbps\n";
     for (const FlowState& fs : g_flows)
     {
         double meanRtt = 0.0;
@@ -339,7 +350,7 @@ WriteSummary(const std::string& path)
         GroundTruth::Counts drops = GroundTruth::Get().Totals(fs.id);
         out << g_meta << ',' << fs.id << ',' << goodput[fs.id] << ',' << meanRtt << ','
             << Percentile(fs.rttMs, 0.95) << ',' << fs.lossEvents << ',' << drops.congestion << ','
-            << drops.random << ',' << jain << '\n';
+            << drops.random << ',' << jain << ',' << crossTcp << '\n';
         std::cout << "flow " << fs.id << ": " << goodput[fs.id] << " Mbps, mean RTT " << meanRtt
                   << " ms, loss events " << fs.lossEvents << ", drops (cong/rand) "
                   << drops.congestion << '/' << drops.random << '\n';
@@ -559,7 +570,9 @@ main(int argc, char* argv[])
     {
         uint16_t port = 7000 + j;
         PacketSinkHelper s("ns3::TcpSocketFactory", InetSocketAddress(Ipv4Address::GetAny(), port));
-        s.Install(crossSink).Start(Seconds(0.0));
+        ApplicationContainer sinkApp = s.Install(crossSink);
+        sinkApp.Start(Seconds(0.0));
+        g_crossSinks.push_back(DynamicCast<PacketSink>(sinkApp.Get(0)));
 
         BulkSendHelper b("ns3::TcpSocketFactory", InetSocketAddress(crossSinkAddr, port));
         b.SetAttribute("MaxBytes", UintegerValue(0));

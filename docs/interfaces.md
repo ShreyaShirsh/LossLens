@@ -63,6 +63,7 @@ for example `TcpLossAware-tree_bw100_rtt50_loss0.01_buf1_f1_x0.3_t0_s1`.
 | `loss_events` | Times the flow entered recovery or timeout |
 | `cong_drops`, `rand_drops` | Ground-truth drop counts |
 | `jain` | Jain's fairness index across the monitored flows (same on every row) |
+| `cross_tcp_mbps` | Mean goodput of the competing CUBIC flows (`--crossTcp`), for fairness; 0 when there are none |
 
 `results/ts_<run_tag>.csv` (with `--traceTs=1`): `time,flow_id,cwnd_bytes,rtt_ms` every 10 ms.
 

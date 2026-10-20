@@ -41,7 +41,6 @@
 
 ## Known limitations
 
-- The code was written against the ns-3.4x API and **has not been compiled yet**. Expect
-  small API fixes for the release you pick.
+- Builds and runs on ns-3.49 (team release).
 - At 1 Gbps the simulation is slow (millions of packets). Start at 50–100 Mbps.
 - With `--tcp=TcpBbr`, pacing is enabled for all sockets, including the CUBIC cross traffic.
