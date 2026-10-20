@@ -72,4 +72,13 @@ awk -v a="$lens" -v b="$cubic" -v bw="$BW" 'BEGIN{
            a / (b > 0 ? b : 1e-9), 100 * a / bw, bw, 100 * b / bw }'
 echo
 echo "Replay this exact run:  bash scripts/demo.sh ~/ns-3 replay $BW $RTT $LOSS $CROSS $BUFFER $SEED"
-echo "Plot it (Windows, project folder):  python eval/demo_plot.py"
+
+# Draw the before/after graph and open it in Windows' image viewer.
+if python3 -c "import pandas, matplotlib" 2>/dev/null; then
+    python3 "$REPO_DIR/eval/demo_plot.py" > /dev/null
+    echo "Graph: results/demo/demo.png"
+    explorer.exe "$(wslpath -w "$OUT/demo.png")" 2>/dev/null || true
+else
+    echo "Graph: install the plotting libraries once with"
+    echo "  sudo apt install -y python3-pandas python3-matplotlib"
+fi
