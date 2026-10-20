@@ -103,6 +103,9 @@ SimParams g_params;
 std::string g_meta;
 Ipv4Address g_senderAddr;
 std::map<uint16_t, uint32_t> g_portToFlow;
+// Monitored flow i and competing CUBIC flow j start at kFirstStart + 0.1 i (or j).
+constexpr double kFirstStart = 0.5;
+
 std::vector<FlowState> g_flows;
 std::vector<Ptr<PacketSink>> g_crossSinks; // competing CUBIC flows, for fairness
 std::ofstream g_featureCsv;
@@ -330,7 +333,7 @@ WriteSummary(const std::string& path)
     double crossTcp = 0.0;
     for (std::size_t j = 0; j < g_crossSinks.size(); ++j)
     {
-        double active = std::max(1e-9, P.duration - (0.2 + 0.1 * j));
+        double active = std::max(1e-9, P.duration - (kFirstStart + 0.1 * j));
         crossTcp += g_crossSinks[j]->GetTotalRx() * 8.0 / active / 1e6;
     }
     crossTcp = g_crossSinks.empty() ? 0.0 : crossTcp / g_crossSinks.size();
@@ -523,7 +526,7 @@ main(int argc, char* argv[])
         FlowState& fs = g_flows[i];
         fs.id = i;
         fs.port = port;
-        fs.startTime = 0.5 + 0.1 * i;
+        fs.startTime = kFirstStart + 0.1 * i;
         fs.sink = DynamicCast<PacketSink>(sinkApp.Get(0));
 
         sock->TraceConnectWithoutContext("HighestSequence", MakeBoundCallback(&OnHighTx, i));
@@ -577,7 +580,7 @@ main(int argc, char* argv[])
         BulkSendHelper b("ns3::TcpSocketFactory", InetSocketAddress(crossSinkAddr, port));
         b.SetAttribute("MaxBytes", UintegerValue(0));
         ApplicationContainer a = b.Install(crossSrc);
-        a.Start(Seconds(0.2 + 0.1 * j));
+        a.Start(Seconds(kFirstStart + 0.1 * j)); // same start as our flows: a fair race
         a.Stop(Seconds(P.duration));
     }
 

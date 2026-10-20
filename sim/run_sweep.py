@@ -56,7 +56,7 @@ PRESETS = {
         algos=[("TcpCubic", ""), ("TcpWestwoodPlus", ""), ("TcpBbr", ""),
                ("TcpLossAware", "tree")],
         bw=[100], rtt=[50], loss=[0.0, 0.01], buffer=[0.5, 1.0, 2.0], flows=[1],
-        crossLoad=[0.0], crossTcp=[1, 3], seed=[1, 2, 3], duration=[30],
+        crossLoad=[0.0], crossTcp=[1, 3], seed=[1, 2, 3], duration=[60],
     ),
 }
 

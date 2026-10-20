@@ -22,6 +22,31 @@ This project trains a lightweight classifier that runs inside the TCP sender
 The simulator knows exactly why each packet was dropped (queue overflow or
 wireless error), which gives us labelled training data for free.
 
+## Results
+
+At 1% random wireless loss on a 100 Mbps link, LossLens is **7× faster than CUBIC at
+50 ms RTT and 24× faster at 150 ms**, and it never takes more than CUBIC's share of a
+shared link.
+
+![CUBIC vs LossLens on the same lossy link](results/plots/demo_0.01.png)
+
+| 1% random loss, 100 Mbps link (Mbps) | CUBIC | LossLens (tree) | LossLens (oracle) | Westwood+ | BBR |
+|---|---|---|---|---|---|
+| Base RTT 50 ms | 3.0 | 21.8 | 31.9 | 37.6 | 70.2 |
+| Base RTT 150 ms | 1.2 | 28.4 | 39.0 | 12.9 | 67.0 |
+
+Mean of 3 runs of 30 s, with bursty background traffic using 30% of the link on average.
+
+- **Oracle** (perfect loss classification) brings CUBIC back to its loss-free speed
+  (34.6 / 42.3 Mbps); the trained decision tree recovers about 70% of that.
+- **Safe:** under pure congestion LossLens behaves exactly like CUBIC.
+- **BBR** is faster here but takes up to 3.5× its fair share from CUBIC users.
+- **Limitation:** when other TCP flows keep the bottleneck queue full, the delay clues
+  always look like congestion and LossLens falls back to plain CUBIC.
+
+All figures: [`results/plots/`](results/plots/) ·
+full table: [`results_table.csv`](results/plots/results_table.csv).
+
 ## Repository layout
 
 ```
@@ -80,4 +105,4 @@ Documentation tasks are listed in [report/outline.md](report/outline.md).
   ask Member 1 before describing anything that isn't written down.
 - Report numbers and figures come only from `results/` runs, never typed in by hand.
 
-**Status:** simulator builds and runs on ns-3.49 (week 1 done).
+**Status:** development and evaluation complete (396 evaluation runs on ns-3.49); report in progress.
