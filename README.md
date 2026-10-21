@@ -104,8 +104,8 @@ data/     Training data written by the simulator (git-ignored)
 
 ## Team
 
-| Member | Role | Responsible for |
-|---|---|---|
-| **Member 1**: [@ShreyaShirsh](https://github.com/ShreyaShirsh) | Development | All code: simulation, ML, TCP, experiments, plots |
-| **Member 2**: Avani Abhay Chaudhary | Documentation | Literature review, introduction, related work, simulation setup and classifier chapters |
-| **Member 3**: Arpita Sinha | Documentation | Design chapter, results write-up, diagrams, slides, final formatting |
+| Member | 
+|---|
+| **Member 1**: Shreya Shirsh |
+| **Member 2**: Avani Abhay Chaudhary |
+| **Member 3**: Arpita Sinha |
