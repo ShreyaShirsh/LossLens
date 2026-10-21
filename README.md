@@ -7,9 +7,9 @@ TCP treats every packet loss as a sign of congestion and cuts its sending window
 On wireless links many losses are caused by interference instead, so TCP slows
 down even when the network has spare capacity.
 
-This project trains a lightweight classifier that runs inside the TCP sender
-(in ns-3). At every loss event it decides whether the loss was caused by
-**congestion** (reduce the window, like CUBIC) or was **random** (keep the window).
+LossLens adds a lightweight classifier inside the TCP sender (in ns-3). At every
+loss event it decides whether the loss was caused by **congestion** (reduce the
+window, like CUBIC) or was **random** (keep the window).
 
 ```
 [sender] ──access── [router] ══ bottleneck queue ══ [AP] ~~ lossy wireless hop ~~ [receiver]
@@ -49,6 +49,44 @@ Mean of 3 runs of 30 s, with bursty background traffic using 30% of the link on 
 All figures: [`results/plots/`](results/plots/) ·
 full table: [`results_table.csv`](results/plots/results_table.csv).
 
+## How it works
+
+| Phase | What was done |
+|---|---|
+| 1. Simulation | ns-3.49 scenario with a congestible router queue and a lossy wireless hop; every drop is labelled congestion or random |
+| 2. Data | 300 runs over link speeds, RTTs, loss rates, buffers and traffic mixes: 36,055 labelled loss events, 7 sender-side features each |
+| 3. Classifier | Decision tree (depth 6), threshold tuned on held-out runs for ≥ 90% congestion recall, exported to plain C++ |
+| 4. TCP | `TcpLossAware` extends CUBIC: cuts the window only for congestion, keeps growing through random-loss recovery, safety fallback |
+| 5. Evaluation | 396 runs against NewReno, CUBIC, Westwood+, Veno and BBR, plus fairness tests against CUBIC users |
+
+Details: [sim/](sim/README.md) · [ml/](ml/README.md) · [tcp/](tcp/README.md) ·
+[file formats](docs/interfaces.md).
+
+## Run it
+
+Setup (WSL2, ns-3.49, Python): see [docs/setup.md](docs/setup.md). Then, inside WSL:
+
+```bash
+bash scripts/link-into-ns3.sh ~/ns-3
+cd ~/ns-3 && ./ns3 build
+```
+
+**Live demo:** a new random network each run; normal TCP (before) vs LossLens (after),
+then the graph opens:
+
+```bash
+bash scripts/demo.sh ~/ns-3
+```
+
+**Reproduce the results:**
+
+```bash
+python3 sim/run_sweep.py --ns3 ~/ns-3 --preset dataset --sample 300   # training data
+python ml/train.py && python ml/export_tree.py                         # train + export tree
+bash scripts/run-eval.sh ~/ns-3                                        # rebuild + evaluation runs
+python eval/plot_results.py                                            # figures + table
+```
+
 ## Repository layout
 
 ```
@@ -56,12 +94,12 @@ common/   Shared C++: feature extractor, simulator ground truth
 sim/      ns-3 scenario, drop labelling, experiment sweeps
 ml/       Dataset loading, training, export of the tree to C++
 tcp/      TcpLossAware congestion control + generated classifier
-eval/     Plots and analysis of experiment results
-data/     Feature CSVs written by the simulator (git-ignored)
-results/  Experiment summaries and plots (git-ignored)
+eval/     Plots, results table, demo graph
+scripts/  Setup, demo and evaluation scripts
 docs/     Setup guide and the file formats between components
-report/   Report outline and documentation tasks
-scripts/  Helper scripts
+report/   Report outline
+results/  Final figures in results/plots/ (raw run outputs are git-ignored)
+data/     Training data written by the simulator (git-ignored)
 ```
 
 ## Team
@@ -71,40 +109,3 @@ scripts/  Helper scripts
 | **Member 1**: [@ShreyaShirsh](https://github.com/ShreyaShirsh) | Development | All code: simulation, ML, TCP, experiments, plots |
 | **Member 2**: Avani Abhay Chaudhary | Documentation | Literature review, introduction, related work, simulation setup and classifier chapters |
 | **Member 3**: Arpita Sinha | Documentation | Design chapter, results write-up, diagrams, slides, final formatting |
-
-Documentation tasks are listed in [report/outline.md](report/outline.md).
-
-## Plan
-
-| Week | Development (Member 1) | Documentation (Members 2 + 3) |
-|---|---|---|
-| 1 | Setup, simulator builds and runs ✅ | Literature review; agree report template |
-| 2 | Labelling checks, oracle mode, first dataset | Introduction + related work drafts; topology diagram |
-| 3 | Full scenario sweep, classifier training | Simulation setup chapter (from sim/README + docs) |
-| 4 | Export tree, integrate into TCP, tune fallback | Design chapter (architecture, TcpLossAware) |
-| 5 | Run all comparisons + plots | Classifier chapter (features, training, threshold) |
-| 6 | Fairness + safety runs, ablation | Results chapter from the plots; discussion |
-| 7 | Bug fixes, final numbers, review report | Abstract, conclusion, slides |
-| 8 | Live demo | Final formatting, references, rehearsal |
-
-## Quick start
-
-1. Install WSL2, ns-3 and the Python packages: see [docs/setup.md](docs/setup.md).
-2. Link the sources into ns-3 and build (inside WSL):
-   ```bash
-   bash scripts/link-into-ns3.sh ~/ns-3
-   cd ~/ns-3 && ./ns3 build
-   ./ns3 run "loss-diff-sim --duration=5 --outDir=/mnt/d/PROJECTS/CN\ PROJECT/results"
-   ```
-3. Generate training data: `python3 sim/run_sweep.py --ns3 ~/ns-3 --preset dataset --sample 300`
-4. Train and export: `python ml/train.py`, then `python ml/export_tree.py`
-5. Rebuild ns-3, run `--preset eval`, then `python eval/plot_results.py`
-
-## Working rules
-
-- File formats between the code components are in [docs/interfaces.md](docs/interfaces.md).
-- Documentation members: read the folder READMEs and docs/ for technical details, and
-  ask Member 1 before describing anything that isn't written down.
-- Report numbers and figures come only from `results/` runs, never typed in by hand.
-
-**Status:** development and evaluation complete (396 evaluation runs on ns-3.49); report in progress.

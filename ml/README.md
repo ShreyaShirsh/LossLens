@@ -20,11 +20,3 @@ python ml/export_tree.py      # then rebuild ns-3
   keep pushing into a full queue. The threshold is tuned on separate validation runs so
   congestion recall ≥ 0.90 (0.95 halves the random losses ignored; deeper trees than 6 overfit).
 - **Never use `meta_*` columns as features.** The sender can't observe them.
-
-## Checklist
-
-- [ ] Week 1: (literature review moved to the documentation team)
-- [ ] Week 2: run `train.py` on Member 1's first small dataset; review the feature list together
-- [ ] Week 3: full training; compare tree / forest / MLP; per-scenario accuracy (group by `meta_*`)
-- [ ] Week 4: pick the final depth (≤ 6), export it
-- [ ] Weeks 5–6: confusion matrix, feature importance, ablation (drop one feature at a time, vary depth)

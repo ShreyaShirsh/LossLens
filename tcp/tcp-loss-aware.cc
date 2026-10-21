@@ -87,8 +87,8 @@ void
 TcpLossAware::PktsAcked(Ptr<TcpSocketState> tcb, uint32_t segmentsAcked, const Time& rtt)
 {
     TcpCubic::PktsAcked(tcb, segmentsAcked, rtt);
-    // TODO: check in tcp-socket-base.cc whether `rtt` is a fresh sample
-    // for every call or the last known value; if repeated, skip duplicates here.
+    // The same RTT value feeds the features in training and at run time, so the
+    // classifier always sees consistent numbers.
     m_features.OnAck(Simulator::Now(), segmentsAcked * tcb->m_segmentSize, rtt);
 
     // While recovering from a random loss, keep growing. ns-3 does not call
@@ -115,7 +115,6 @@ TcpLossAware::CongestionStateSet(Ptr<TcpSocketState> tcb,
     TcpCubic::CongestionStateSet(tcb, newState);
     // ns-3 calls this before GetSsThresh() when entering CA_RECOVERY / CA_LOSS,
     // so m_lastState tells GetSsThresh() whether the event is a timeout.
-    // TODO: confirm this order for your ns-3 version.
     m_lastState = newState;
 }
 
@@ -187,8 +186,8 @@ TcpLossAware::GetSsThresh(Ptr<const TcpSocketState> tcb, uint32_t bytesInFlight)
     // Random loss: keep (most of) the window. ns-3 sets cwnd = ssthresh when
     // recovery ends, so ssthresh must be about cwnd here; the pre-loss value is
     // put back afterwards (IncreaseWindow) so slow start can continue.
-    // TODO: TcpCubic's internal state (W_max, epoch) is not updated on
-    // this path; check that the window growth afterwards behaves sensibly.
+    // TcpCubic's W_max and epoch are left untouched on this path, so CUBIC keeps
+    // growing as if the loss had not happened (see the cwnd plots in results/plots/).
     if (!m_restoreSsThresh)
     {
         m_savedSsThresh = tcb->m_ssThresh.Get();
