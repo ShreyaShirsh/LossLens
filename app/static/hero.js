@@ -1,16 +1,17 @@
 'use strict';
-// Hero illustration: two lanes (normal TCP vs LossLens) facing the SAME losses at the same moments.
+// Hero illustration: two lanes (normal TCP vs LossLens) hit by the SAME radio interference at the
+// same moments. Queue overflows (congestion) happen per lane, whenever that lane fills the link.
 
 function initHero() {
   const cv = $('#hero-canvas'), ctx = cv.getContext('2d');
   let W = 0, H = 270, visible = true;
   const MAXR = 14;                                   // packets per second at full speed (visual)
   const lanes = [
-    { name: 'Normal TCP', color: '#60a5fa', aware: false, rate: MAXR, pk: [], acc: 0, y: 92, cuts: 0 },
-    { name: 'LossLens', color: '#22d3ee', aware: true, rate: MAXR, pk: [], acc: 0, y: 196, cuts: 0 },
+    { name: 'Normal TCP', color: '#60a5fa', aware: false, rate: MAXR, pk: [], acc: 0, y: 92, cuts: 0, full: 0, fullLimit: 2.5 },
+    { name: 'LossLens', color: '#22d3ee', aware: true, rate: MAXR, pk: [], acc: 0, y: 196, cuts: 0, full: 0, fullLimit: 2.5 },
   ];
   const fx = [];                                     // visual effects (rings + labels)
-  let t = 0, nextRandom = 1.4, nextCong = 5.5;
+  let t = 0, nextRandom = 1.4;
 
   function resize() {
     const r = cv.getBoundingClientRect(), dpr = devicePixelRatio || 1;
@@ -24,17 +25,16 @@ function initHero() {
   const pos = f => x0() + (x1() - x0()) * f;        // fraction along the path -> pixels
   const NODES = [[0, 'Sender'], [.38, 'Router queue'], [.66, 'Wi-Fi access point'], [1, 'Receiver']];
 
-  function event(kind) {
+  // one loss on one lane: 'random' = radio interference, 'cong' = router queue overflowed
+  function lose(l, kind) {
     const f = kind === 'random' ? .83 : .38;
-    lanes.forEach(l => {
-      // remove the packet closest to the loss point, if any
-      let best = -1, bd = 1;
-      l.pk.forEach((p, i) => { const d = Math.abs(p.f - f); if (d < bd && !p.dead) { bd = d; best = i; } });
-      if (best >= 0 && bd < .12) { l.pk[best].dead = 1; l.pk[best].f = f; }
-      if (kind === 'random') { if (!l.aware) { l.rate = Math.max(l.rate * .5, 2.5); l.cuts++; } }
-      else { l.rate = Math.max(l.rate * .5, 2.5); l.cuts++; }
-      fx.push({ x: pos(f), y: l.y, t: 0, kind });
-    });
+    let best = -1, bd = 1;                          // remove the packet closest to the loss point
+    l.pk.forEach((p, i) => { const d = Math.abs(p.f - f); if (d < bd && !p.dead) { bd = d; best = i; } });
+    if (best >= 0 && bd < .12) { l.pk[best].dead = 1; l.pk[best].f = f; }
+    const cut = kind === 'cong' || !l.aware;       // normal TCP cuts at every loss, LossLens only at congestion
+    if (cut) { l.rate = Math.max(l.rate * .5, 2.5); l.cuts++; }
+    fx.push({ x: pos(f), y: l.y, t: 0, kind, good: !(kind === 'random' && cut),
+      text: kind === 'cong' ? 'queue full: slow down ✓' : cut ? 'interference: slows down ✗' : 'interference: ignored ✓' });
   }
 
   let last = performance.now();
@@ -43,10 +43,13 @@ function initHero() {
     const dt = Math.min((now - last) / 1000, .05); last = now;
     if (!visible || !W) return;
     t += dt;
-    if (t > nextRandom) { event('random'); nextRandom = t + 1.1 + Math.random() * 1.6; }
-    if (t > nextCong) { event('cong'); nextCong = t + 9 + Math.random() * 3; }
+    if (t > nextRandom) { lanes.forEach(l => lose(l, 'random')); nextRandom = t + 1.1 + Math.random() * 1.6; }
     lanes.forEach(l => {
-      l.rate = Math.min(MAXR, l.rate + 3.2 * dt);
+      // grow fast when far below capacity, gently near it (like CUBIC)
+      l.rate = Math.min(MAXR, l.rate + (0.5 + 0.4 * (MAXR - l.rate)) * dt);
+      // a lane that keeps the link full fills the router queue until it overflows
+      if (l.rate > MAXR * .97) l.full += dt; else l.full = Math.max(0, l.full - dt);
+      if (l.full > l.fullLimit) { lose(l, 'cong'); l.full = 0; l.fullLimit = 2 + Math.random() * 1.5; }
       l.acc += l.rate * dt;
       while (l.acc >= 1) { l.acc -= 1; l.pk.push({ f: 0, dead: 0 }); }
       l.pk.forEach(p => { if (p.dead) p.dead += dt; else p.f += dt * .3; });
@@ -104,13 +107,14 @@ function initHero() {
       ctx.strokeStyle = `rgba(${col},${a})`; ctx.lineWidth = 2.5;
       ctx.beginPath(); ctx.arc(e.x, e.y, 8 + e.t * 34, 0, 7); ctx.stroke();
     });
-    const lastEv = fx.length ? fx[fx.length - 1] : null;
-    if (lastEv && lastEv.t < 1.2) {
-      const col = lastEv.kind === 'random' ? '#fb923c' : '#f43f5e';
-      ctx.fillStyle = col; ctx.globalAlpha = Math.max(0, 1 - lastEv.t / 1.2); ctx.font = '700 13px Segoe UI, sans-serif';
-      ctx.fillText(lastEv.kind === 'random' ? 'radio interference!' : 'queue overflow!', lastEv.x, H / 2 + 6);
-      ctx.globalAlpha = 1;
-    }
+    // what each lane did about each loss, written just above the lane
+    ctx.font = '700 12.5px Segoe UI, sans-serif';
+    fx.forEach(e => {
+      ctx.globalAlpha = Math.max(0, 1 - e.t / 1.2);
+      ctx.fillStyle = e.good ? '#34d399' : '#fb7185';
+      ctx.fillText(e.text, e.x, e.y - 22 - e.t * 6);
+    });
+    ctx.globalAlpha = 1;
   }
   requestAnimationFrame(frame);
 }
