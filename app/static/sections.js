@@ -254,24 +254,7 @@ function initBuild() {
 }
 
 /* ---------------- 7. wrap-up ---------------- */
-const QA = [
-  ['How does the detective decide?', 'At each loss it reads seven clues the sender can measure and walks a depth-6 decision tree. The delay ratio matters most: a filling router queue makes delays grow before a congestion loss, while a random loss shows up with delays flat.'],
-  ['Why a decision tree and not a neural network?', 'Accuracy is close (see "Tree vs forest vs neural network"), but the tree is tiny, explainable, decides instantly, and exports to plain C++ if/else, so TCP needs no machine-learning library.'],
-  ['Why are the results the same every time for the same settings?', 'ns-3 is deterministic: the same network and the same loss-pattern number always give the same result, so anyone can reproduce our numbers, and both senders face exactly the same losses. Change the pattern number or roll the dice and the numbers change. Our evaluation averaged 3 patterns per scenario.'],
-  ['Is the live demo real or pre-recorded?', 'Real. "Run live simulation" starts three ns-3 simulations (normal TCP, LossLens, and the perfect detective) and plots what they measure. The pre-run networks are the same simulator, stored as a backup.'],
-  ['What if the tree is wrong?', 'A timeout always counts as congestion, a safety fallback overrules the tree when a queue is clearly building, and the tree is tuned to catch at least 90% of congestion losses. A false alarm just means normal TCP behaviour, so the worst case is today\'s TCP.'],
-  ['How were the training labels obtained?', 'The simulator knows why every packet vanished. A drop at the router queue is labelled congestion, a drop on the wireless link is labelled random. A real network can never tell you that, which is why we simulate.'],
-  ['What is the "perfect detective" (oracle)?', 'The same TCP that is told the true cause of each loss by the simulator. It is the ceiling any classifier could reach. Our tree reaches roughly 70% of it.'],
-  ['Why does LossLens gain nothing on a shared, full link?', 'When other TCP flows keep the queue full, delays always look high, so every loss looks like congestion and LossLens behaves like CUBIC. Smarter clues for shared bottlenecks are future work.'],
-  ['Does this work on a real network?', 'We evaluated in simulation. The design needs only sender-side measurements and a tiny tree, so a Linux kernel port (for example with eBPF) is feasible, but it would need testing on real radios.'],
-];
 function initWrap() {
-  const qa = $('#qa');
-  QA.forEach(([q, a]) => {
-    const box = h('div', { class: 'qa' }, h('button', {}, q), h('div', { class: 'ans' }, a));
-    $('button', box).addEventListener('click', () => box.classList.toggle('open'));
-    qa.append(box);
-  });
   const team = [
     ['Shreya Shirsh', 'SS', 'Developer', 'Built everything technical: the ns-3 simulation, drop labelling, dataset, classifier, LossLens TCP, 396 experiments, this app.'],
     ['Avani Abhay Chaudhary', 'AC', 'Developer', 'Literature review, introduction, related work, simulation set-up and classifier chapters, references.'],
