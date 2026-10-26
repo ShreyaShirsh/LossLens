@@ -152,8 +152,8 @@
 <!-- ================= RESULTS ================= -->
 <section id="results">
   <div class="eyebrow">4 · Results</div>
-  <h2>396 experiments, five competitors, one clear pattern</h2>
-  <p class="lead">NewReno, CUBIC, Westwood+, Veno and BBR against LossLens, from 0 to 5% random wireless loss at two distances, plus fairness tests with competing users.</p>
+  <h2>396 experiments, one clear pattern</h2>
+  <p class="lead">LossLens against the standard loss-based TCP versions (NewReno, CUBIC, Veno) and the perfect-detective ceiling, from 0 to 5% random wireless loss at two distances, plus fairness tests with competing users.</p>
   <div class="tabs">
     <div class="seg" id="res-tabs"></div>
     <div class="seg" id="res-rtt"></div>
@@ -235,7 +235,7 @@
         <li>TcpLossAware extends CUBIC: backs off only for congestion, grows through random-loss recovery, safety fallback, oracle mode as ceiling</li></ul>
       <div class="out" id="ph2-out"></div></div>
     <div class="card phase glow"><div class="num grad">3</div><h3>Evaluation and demo</h3>
-      <ul><li>396 runs against NewReno, CUBIC, Westwood+, Veno and BBR</li>
+      <ul><li>Comparison runs against NewReno, CUBIC and Veno</li>
         <li>Fairness against 1 and 3 competing CUBIC users, equal start, 60 s</li>
         <li>Safety test: pure congestion must match CUBIC exactly</li>
         <li>This live app: real simulator runs, random networks, replay backup</li></ul>

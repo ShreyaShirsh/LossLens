@@ -21,7 +21,7 @@ function segment(host, labels, values, current, onPick) {
 /* ---------------- 1. problem ---------------- */
 function initProblem() {
   let loss = 0.01, rtt = 50;
-  const algos = ['NewReno', 'CUBIC', 'Veno', 'Westwood+', 'BBR', 'LossLens', 'LossLens (oracle)'];
+  const algos = ['NewReno', 'CUBIC', 'Veno', 'LossLens', 'LossLens (oracle)'];
   function render() {
     $('#prob-title').textContent = `${LOSS_LABEL[LOSSES.indexOf(loss)]} wireless loss · ${rtt} ms round trip`;
     const rows = algos.map(a => [a, speedOf(a, rtt, loss).mean]);
@@ -67,7 +67,7 @@ function initClues() {
 
 /* ---------------- 4. results ---------------- */
 function initResults() {
-  let tab = 'speed', rtt = 50; const hidden = new Set(), order = ['LossLens', 'LossLens (oracle)', 'CUBIC', 'NewReno', 'Westwood+', 'Veno', 'BBR'];
+  let tab = 'speed', rtt = 50; const hidden = new Set(), order = ['LossLens', 'LossLens (oracle)', 'CUBIC', 'NewReno', 'Veno'];
   const fairLoss = { v: 0 }, fairComp = { v: 1 };
   function speedChart() {
     $('#res-legend').innerHTML = '';
@@ -80,28 +80,28 @@ function initResults() {
       name: niceName(a), color: COLORS[a], dash: a === 'LossLens (oracle)', width: a === 'LossLens' ? 4.4 : 2.2,
       vals: LOSSES.map(l => speedOf(a, rtt, l).mean), err: LOSSES.map(l => speedOf(a, rtt, l).std),
     }));
-    categoryLines($('#res-chart'), { cats: LOSS_LABEL, series, yMax: 100, yTitle: 'Goodput (Mbps)', xTitle: 'Random loss on the wireless link', unit: 'Mbps' });
+    categoryLines($('#res-chart'), { cats: LOSS_LABEL, series, yMax: 50, yTitle: 'Goodput (Mbps)', xTitle: 'Random loss on the wireless link', unit: 'Mbps' });
   }
   function fairChart() {
-    const F = DATA.results.fairness, algos = ['CUBIC', 'Westwood+', 'BBR', 'LossLens'], bufs = [0.5, 1, 2];
+    const F = DATA.results.fairness, algos = ['CUBIC', 'LossLens'], bufs = [0.5, 1, 2];
     $('#fair-legend').innerHTML = '';
     algos.forEach(a => $('#fair-legend').append(h('span', { class: 'chip' }, h('span', { class: 'sw', style: `background:${COLORS[a]}` }), a)));
     const get = (a, b) => F.find(r => r.algo === a && r.loss === fairLoss.v && r.competitors === fairComp.v && r.buffer === b)?.share;
     groupedBars($('#fair-chart'), {
       groups: bufs.map(b => `router buffer ${b}× BDP`), series: algos.map(a => ({ name: a, color: COLORS[a], vals: bufs.map(b => get(a, b)) })),
-      yMax: 4, ref: 1, xTitle: `Our flow's share vs ${fairComp.v} competing CUBIC flow${fairComp.v > 1 ? 's' : ''} (equal start, 60 s)`,
+      yMax: 2, ref: 1, xTitle: `Our flow's share vs ${fairComp.v} competing CUBIC flow${fairComp.v > 1 ? 's' : ''} (equal start, 60 s)`,
     });
-    const bbr = Math.max(...bufs.map(b => get('BBR', b))), ll = get('LossLens', 1), cu = get('CUBIC', 1);
+    const ll = get('LossLens', 1), cu = get('CUBIC', 1);
     $('#fair-note').innerHTML = fairLoss.v === 0
-      ? `<b style="color:#67e8f9">LossLens takes exactly CUBIC's share</b> (${fmt(ll, 2)} vs ${fmt(cu, 2)} at 1× BDP): it is not aggressive. BBR takes up to <b>${fmt(bbr, 1)}×</b> its fair share, squeezing other users.`
-      : `With 1% wireless loss and competing flows that keep the queue full, nobody gets much and LossLens ≈ CUBIC (${fmt(ll, 2)} vs ${fmt(cu, 2)}). This is our <b>known limitation</b>. BBR gets ${fmt(bbr, 1)}× but at others' expense.`;
+      ? `<b style="color:#67e8f9">LossLens takes exactly CUBIC's share</b> (${fmt(ll, 2)} vs ${fmt(cu, 2)} at 1× BDP): it is not aggressive towards other users.`
+      : `With 1% wireless loss and competing flows that keep the queue full, nobody gets much and LossLens ≈ CUBIC (${fmt(ll, 2)} vs ${fmt(cu, 2)}). This is our <b>known limitation</b>.`;
   }
   function tableView() {
-    const algos = ['NewReno', 'CUBIC', 'Westwood+', 'Veno', 'BBR', 'LossLens (oracle)', 'LossLens'];
+    const algos = ['NewReno', 'CUBIC', 'Veno', 'LossLens (oracle)', 'LossLens'];
     let html = `<table class="nums"><tr><th>${rtt} ms RTT</th>${LOSS_LABEL.map(l => `<th>${l} loss</th>`).join('')}</tr>`;
     algos.forEach(a => {
       html += `<tr class="${a.startsWith('LossLens') ? 'us' : ''}"><td><span class="dotc" style="background:${COLORS[a]}"></span>${niceName(a)}</td>` +
-        LOSSES.map(l => { const v = speedOf(a, rtt, l).mean; return `<td style="background:rgba(34,211,238,${(v / 100 * .45).toFixed(2)})">${fmt(v, 1)}</td>`; }).join('') + '</tr>';
+        LOSSES.map(l => { const v = speedOf(a, rtt, l).mean; return `<td style="background:rgba(34,211,238,${(Math.min(v, 50) / 50 * .45).toFixed(2)})">${fmt(v, 1)}</td>`; }).join('') + '</tr>';
     });
     $('#res-table').innerHTML = html + '</table>';
   }
@@ -259,7 +259,6 @@ const QA = [
   ['Why a decision tree and not a neural network?', 'Accuracy is close (see "Tree vs forest vs neural network"), but the tree is tiny, explainable, decides instantly, and exports to plain C++ if/else, so TCP needs no machine-learning library.'],
   ['Why are the results the same every time for the same settings?', 'ns-3 is deterministic: the same network and the same loss-pattern number always give the same result, so anyone can reproduce our numbers, and both senders face exactly the same losses. Change the pattern number or roll the dice and the numbers change. Our evaluation averaged 3 patterns per scenario.'],
   ['Is the live demo real or pre-recorded?', 'Real. "Run live simulation" starts three ns-3 simulations (normal TCP, LossLens, and the perfect detective) and plots what they measure. The pre-run networks are the same simulator, stored as a backup.'],
-  ['Why not just use BBR?', 'BBR is faster on lossy links, but it takes up to about 3.9 times its fair share from CUBIC users. LossLens keeps TCP\'s polite behaviour: exactly a fair share, and only the wasted slow-downs are removed.'],
   ['What if the tree is wrong?', 'A timeout always counts as congestion, a safety fallback overrules the tree when a queue is clearly building, and the tree is tuned to catch at least 90% of congestion losses. A false alarm just means normal TCP behaviour, so the worst case is today\'s TCP.'],
   ['How were the training labels obtained?', 'The simulator knows why every packet vanished. A drop at the router queue is labelled congestion, a drop on the wireless link is labelled random. A real network can never tell you that, which is why we simulate.'],
   ['What is the "perfect detective" (oracle)?', 'The same TCP that is told the true cause of each loss by the simulator. It is the ceiling any classifier could reach. Our tree reaches roughly 70% of it.'],
