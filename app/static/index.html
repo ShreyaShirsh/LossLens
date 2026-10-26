@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LossLens | Adaptive TCP congestion control</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<nav id="nav">
+  <div class="brand">
+    <svg class="logo" viewBox="0 0 32 32"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#22d3ee"/><stop offset="1" stop-color="#8b5cf6"/></linearGradient></defs>
+      <circle cx="14" cy="14" r="9" fill="none" stroke="url(#lg)" stroke-width="3"/><path d="M21 21l7 7" stroke="url(#lg)" stroke-width="3.5" stroke-linecap="round"/>
+      <path d="M9 15l3-4 3 5 3-3" fill="none" stroke="#e8ecf8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    LossLens
+  </div>
+  <div class="links">
+    <a href="#problem">Problem</a><a href="#idea">The idea</a><a href="#lab">Live lab</a>
+    <a href="#results">Results</a><a href="#brain">The detective</a><a href="#build">How we built it</a><a href="#wrap">Limits &amp; Q&amp;A</a>
+  </div>
+  <div id="sim-pill"><i></i><span>checking simulator…</span></div>
+</nav>
+<div id="dots"></div>
+<div id="tip"></div>
+
+<main>
+<!-- ================= HERO ================= -->
+<section id="hero">
+  <div class="eyebrow">Adaptive congestion control for high-speed networks</div>
+  <h1 class="grad">LossLens</h1>
+  <p class="sub">TCP slows down at <b>every</b> lost packet, even when Wi-Fi interference caused it and the road is empty.
+    LossLens works out <b>why</b> each packet was lost, and only slows down when it should.</p>
+  <p class="topic">Learning-based loss differentiation for TCP congestion control in high-speed wireless networks · ns-3 simulation · 3-member team</p>
+  <div class="stats">
+    <div class="card stat glow"><div class="n grad" id="st-x">7–24×</div><div class="l">faster than CUBIC at 1% wireless loss</div></div>
+    <div class="card stat"><div class="n" id="st-runs">0</div><div class="l">simulation runs in the evaluation</div></div>
+    <div class="card stat"><div class="n" id="st-events">0</div><div class="l">labelled loss events used to train the detective</div></div>
+    <div class="card stat"><div class="n" id="st-fair">0</div><div class="l">fair share against competing CUBIC users</div></div>
+  </div>
+  <div class="card" id="hero-canvas-wrap">
+    <canvas id="hero-canvas"></canvas>
+    <div class="cue">Illustration: both lanes face the same losses at the same moments. Real measurements are in the sections below.</div>
+  </div>
+</section>
+
+<!-- ================= PROBLEM ================= -->
+<section id="problem">
+  <div class="eyebrow">1 · The problem</div>
+  <h2>TCP blames every lost packet on traffic</h2>
+  <p class="lead">TCP, the protocol behind almost everything online, treats a lost packet as proof of a traffic jam and cuts its speed in half. On a wired network that is usually right. On Wi-Fi and mobile links, many losses are just radio interference.</p>
+  <div class="split">
+    <div>
+      <table class="compare">
+        <tr><th></th><th>Congestion loss</th><th>Random wireless loss</th></tr>
+        <tr><td>Cause</td><td>Router queue overflows</td><td>Interference, distance, walls</td></tr>
+        <tr><td>Warning signs</td><td>Delays grow first</td><td>None, strikes anywhere</td></tr>
+        <tr><td>Right reaction</td><td>Slow down</td><td>Keep speed, resend</td></tr>
+        <tr><td>TCP today</td><td>Slows down ✓</td><td style="color:#fda4af">Slows down ✗</td></tr>
+      </table>
+      <div class="callout" id="prob-callout"></div>
+      <p class="muted small" style="margin-top:14px">Think of a delivery driver who slows down every time a parcel goes missing, assuming the roads are jammed. If the parcel fell out over a pothole on an empty road, driving slower only makes every delivery late.</p>
+    </div>
+    <div class="card glow">
+      <div class="row" style="justify-content:space-between;margin-bottom:12px">
+        <div><div class="muted small">Measured goodput on a 100 Mbps link</div><b id="prob-title" style="font-size:18px"></b></div>
+        <div class="row"><div class="seg" id="seg-loss"></div><div class="seg" id="seg-rtt"></div></div>
+      </div>
+      <div class="bars" id="prob-bars"></div>
+      <div class="muted small" style="margin-top:10px">Mean of 3 runs per bar, 30 s each, with bursty background traffic. Drag the loss rate to watch standard TCP collapse.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= IDEA ================= -->
+<section id="idea">
+  <div class="eyebrow">2 · The idea</div>
+  <h2>A detective inside TCP, with seven clues</h2>
+  <p class="lead">The two kinds of loss leave different fingerprints. Before a congestion loss, packets pile up in the router queue, so delays climb. A random loss arrives out of nowhere, with delays flat. At every loss, LossLens reads seven clues the sender can measure and a small decision tree reaches a verdict.</p>
+  <div class="grid g4 reveal" id="clue-grid" style="margin-top:28px"></div>
+  <div class="split" style="margin-top:30px">
+    <div class="card">
+      <h3>Two clues already pull the classes apart</h3>
+      <p class="muted small" style="margin-bottom:6px">Each dot is a real loss from the training data. Congestion losses (rose) happen when delays are up and the sender overshoots what the link carries; random losses (orange) cluster near the bottom left.</p>
+      <div class="row small"><span><span class="dotc" style="background:#f43f5e"></span>congestion loss</span><span><span class="dotc" style="background:#fb923c"></span>random wireless loss</span></div>
+      <div id="scatter"></div>
+    </div>
+    <div class="card glow">
+      <h3>What happens at every loss</h3>
+      <ol class="muted" style="margin:12px 0 0 20px;font-size:15.5px;line-height:2">
+        <li>TCP notices a packet is missing</li>
+        <li>LossLens snapshots <b style="color:#e8ecf8">7 clues</b> about the recent past</li>
+        <li>A <b style="color:#e8ecf8">depth-6 decision tree</b> (a flowchart of yes/no questions) gives a verdict</li>
+        <li><b style="color:#fda4af">Congestion</b> → slow down like CUBIC<br><b style="color:#fdba74">Random</b> → keep speed and just resend</li>
+      </ol>
+      <div class="callout" style="background:rgba(34,211,238,.08);border-color:rgba(34,211,238,.3)">
+        <b style="color:#67e8f9">Safety first.</b> A timeout always counts as congestion, an unsure verdict means slowing down, and the tree is tuned to catch at least 90% of real congestion losses. The worst case is today's behaviour, never worse.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= LAB ================= -->
+<section id="lab">
+  <div class="eyebrow">3 · Live lab</div>
+  <h2>Build any network. Race normal TCP against LossLens.</h2>
+  <p class="lead">Every run uses the real ns-3 simulator: the same network, the same random losses, three different senders. Pick the conditions, or roll the dice for a surprise.</p>
+  <div class="shell">
+    <div class="card glow">
+      <div class="ctl"><label>Link speed <b id="v-bw"></b></label><input type="range" id="c-bw" min="25" max="300" step="25" value="100"></div>
+      <div class="ctl"><label>Round-trip distance <b id="v-rtt"></b></label><input type="range" id="c-rtt" min="10" max="200" step="10" value="50"></div>
+      <div class="ctl"><label>Wireless loss <b id="v-loss"></b></label><input type="range" id="c-loss" min="0" max="50" step="1" value="10"></div>
+      <div class="ctl"><label>Background traffic <b id="v-cross"></b></label><input type="range" id="c-cross" min="0" max="60" step="10" value="0"></div>
+      <div class="ctl"><label>Router buffer <b id="v-buffer"></b></label><input type="range" id="c-buffer" min="0.5" max="4" step="0.5" value="1"></div>
+      <div class="ctl"><label>Random-loss pattern # <b id="v-seed"></b></label><input type="range" id="c-seed" min="1" max="1000" step="1" value="1"></div>
+      <label class="small muted" style="display:flex;gap:9px;align-items:center;margin:2px 0 12px;cursor:pointer"><input type="checkbox" id="c-oracle" style="accent-color:#22d3ee;width:16px;height:16px"> Also run the perfect detective (the ceiling; slower)</label>
+      <div class="row" style="margin-top:6px">
+        <button class="btn" id="btn-run">▶ Run live simulation</button>
+        <button class="btn ghost" id="btn-rand" title="Random network">🎲 Surprise me</button>
+      </div>
+      <div class="muted small" style="margin-top:10px" id="run-note">About 20 simulated seconds per run.</div>
+      <div style="margin-top:16px"><b style="font-size:13px">Pre-run networks</b> <span class="muted small">(instant, also the offline backup)</span></div>
+      <div class="preruns" id="preruns"></div>
+    </div>
+    <div>
+      <div class="card" id="lab-wait" style="display:none">
+        <div class="spin"></div><h3 id="wait-title">Simulating packets…</h3>
+        <div class="muted small" id="wait-fact" style="min-height:22px"></div>
+        <div class="steps"><span class="step" id="s-cubic">Normal TCP</span><span class="step" id="s-tree">LossLens</span><span class="step" id="s-oracle">Perfect detective</span></div>
+        <div class="muted small">elapsed <b id="wait-time">0</b> s</div>
+      </div>
+      <div id="lab-out">
+        <div class="row" style="margin-bottom:12px" id="lab-chips"></div>
+        <div class="racers" id="racers"></div>
+        <div class="card">
+          <div class="row" style="justify-content:space-between;margin-bottom:6px">
+            <b>Sending rate over time</b>
+            <div class="row" id="lab-legend"></div>
+          </div>
+          <div id="lab-chart"></div>
+          <div class="tick-legend"><span><span class="dotc" style="background:#fb923c"></span>random loss</span><span><span class="dotc" style="background:#f43f5e"></span>congestion loss</span><span>a dot above a tick marks a wrong call by the tree</span></div>
+          <div class="playbar">
+            <button class="btn sm ghost" id="pb-play">⏸</button>
+            <input type="range" id="pb-scrub" min="0" max="1000" value="0">
+            <div class="seg" id="pb-speed"></div>
+          </div>
+        </div>
+        <div class="verdict" id="verdict" style="display:none"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= RESULTS ================= -->
+<section id="results">
+  <div class="eyebrow">4 · Results</div>
+  <h2>396 experiments, five competitors, one clear pattern</h2>
+  <p class="lead">NewReno, CUBIC, Westwood+, Veno and BBR against LossLens, from 0 to 5% random wireless loss at two distances, plus fairness tests with competing users.</p>
+  <div class="tabs">
+    <div class="seg" id="res-tabs"></div>
+    <div class="seg" id="res-rtt"></div>
+  </div>
+  <div class="card glow" id="tab-speed">
+    <div class="legend" id="res-legend"></div>
+    <div id="res-chart"></div>
+    <div class="muted small">Goodput = useful data delivered per second. Error bars show the spread over 3 random-loss patterns. Hover for exact values.</div>
+  </div>
+  <div class="card glow" id="tab-fair" style="display:none">
+    <div class="row" style="justify-content:space-between;margin-bottom:6px">
+      <div class="legend" id="fair-legend"></div>
+      <div class="row"><div class="seg" id="fair-loss"></div><div class="seg" id="fair-comp"></div></div>
+    </div>
+    <div id="fair-chart"></div>
+    <div class="muted small" id="fair-note"></div>
+  </div>
+  <div class="card glow" id="tab-table" style="display:none"><div id="res-table"></div>
+    <div class="muted small" style="margin-top:10px">Mean goodput in Mbps on a 100 Mbps bottleneck. Rows in blue are LossLens.</div></div>
+</section>
+
+<!-- ================= BRAIN ================= -->
+<section id="brain">
+  <div class="eyebrow">5 · Inside the detective</div>
+  <h2>How well does the decision tree judge each loss?</h2>
+  <p class="lead" id="brain-lead"></p>
+  <div class="grid g3" style="margin-top:26px">
+    <div class="card">
+      <h3>On networks it has never seen</h3>
+      <div class="muted small" style="margin-bottom:12px" id="split-note"></div>
+      <div class="confusion" id="confusion"></div>
+    </div>
+    <div class="card">
+      <h3>Tree vs forest vs neural network</h3>
+      <div class="muted small" style="margin-bottom:10px">All tuned to catch 90% of congestion losses on validation runs.</div>
+      <table class="nums" id="model-table"></table>
+      <div class="muted small" style="margin-top:10px">We ship the tree: nearly as accurate, tiny, explainable, and it runs as plain C++ inside TCP.</div>
+    </div>
+    <div class="card">
+      <h3>Which clues matter most</h3>
+      <div id="imp" style="margin-top:12px"></div>
+    </div>
+  </div>
+  <div class="split" style="grid-template-columns:1.25fr .75fr;margin-top:24px">
+    <div class="card">
+      <div class="row" style="justify-content:space-between;margin-bottom:10px">
+        <div><h3 style="margin:0">The tree, drawn out</h3><div class="muted small">Click a question to expand or collapse it</div></div>
+        <div class="row"><button class="btn sm ghost" id="tree-collapse">Collapse</button><button class="btn sm ghost" id="tree-expand">Expand all</button></div>
+      </div>
+      <div id="tree-wrap"><svg id="tree-svg"></svg></div>
+    </div>
+    <div class="card glow">
+      <h3>Be the sender: try the detective</h3>
+      <div class="muted small" style="margin-bottom:8px">Set the seven clues yourself, or load a real loss event.</div>
+      <div class="row" style="margin-bottom:10px"><button class="btn sm ghost" id="ex-rand">Real random loss</button><button class="btn sm ghost" id="ex-cong">Real congestion loss</button></div>
+      <div id="try-sliders"></div>
+      <div id="verdict-box"></div>
+      <div class="muted small" style="margin-top:8px;text-align:center" id="verdict-detail"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= BUILD ================= -->
+<section id="build">
+  <div class="eyebrow">6 · How we built it</div>
+  <h2>Three phases, from raw simulation to a live demo</h2>
+  <svg class="pipe" viewBox="0 0 1000 120" id="pipe" style="margin:24px 0 8px"></svg>
+  <div class="grid g3 reveal">
+    <div class="card phase glow"><div class="num grad">1</div><h3>Simulation and data</h3>
+      <ul><li>ns-3.49 network: sender, router with a limited queue, Wi-Fi access point, lossy radio link, bursty background traffic</li>
+        <li>Every dropped packet is labelled with its true cause: queue overflow or wireless error</li>
+        <li>7 sender-side clues computed at each loss</li>
+        <li>300 runs over speeds, distances, loss rates, buffers and traffic</li></ul>
+      <div class="out" id="ph1-out"></div></div>
+    <div class="card phase glow"><div class="num grad">2</div><h3>Classifier and LossLens TCP</h3>
+      <ul><li>Trained a decision tree, random forest and neural network; tested on unseen runs</li>
+        <li>Threshold tuned for ≥ 90% congestion recall on separate validation runs</li>
+        <li>Final depth-6 tree exported to plain C++ if/else</li>
+        <li>TcpLossAware extends CUBIC: backs off only for congestion, grows through random-loss recovery, safety fallback, oracle mode as ceiling</li></ul>
+      <div class="out" id="ph2-out"></div></div>
+    <div class="card phase glow"><div class="num grad">3</div><h3>Evaluation and demo</h3>
+      <ul><li>396 runs against NewReno, CUBIC, Westwood+, Veno and BBR</li>
+        <li>Fairness against 1 and 3 competing CUBIC users, equal start, 60 s</li>
+        <li>Safety test: pure congestion must match CUBIC exactly</li>
+        <li>This live app: real simulator runs, random networks, replay backup</li></ul>
+      <div class="out" id="ph3-out"></div></div>
+  </div>
+  <div class="split" style="margin-top:26px;grid-template-columns:1fr 1fr">
+    <div class="card"><h3>Code written</h3><div class="loc" id="loc" style="margin-top:12px"></div>
+      <div class="techchips"><span class="chip">C++17</span><span class="chip">ns-3.49</span><span class="chip">Python</span><span class="chip">scikit-learn</span><span class="chip">WSL2 Ubuntu</span><span class="chip">Git / GitHub</span></div></div>
+    <div class="card"><h3>Repository</h3><pre class="mono muted small" style="margin-top:10px;line-height:1.7">common/   feature extractor, ground truth
+sim/      ns-3 scenario, drop labelling, sweeps
+ml/       training, export tree to C++
+tcp/      TcpLossAware + generated tree
+eval/     figures and tables
+app/      this presentation app
+scripts/  setup, demo, evaluation</pre></div>
+  </div>
+</section>
+
+<!-- ================= WRAP ================= -->
+<section id="wrap">
+  <div class="eyebrow">7 · Honest limits, and your questions</div>
+  <h2>What LossLens cannot do (yet)</h2>
+  <div class="grid g3 reveal" style="margin-top:20px">
+    <div class="card"><h3 style="color:#fdba74">Shared, full queues</h3><p class="muted small">When other TCP flows keep the router queue full, delays always look like congestion and LossLens falls back to plain CUBIC. It gains nothing there, but it is never worse.</p></div>
+    <div class="card"><h3 style="color:#fdba74">Simulated radio</h3><p class="muted small">The wireless hop is a link with a random error model, not a full Wi-Fi model with fading and retransmissions. Real radios would be the next step.</p></div>
+    <div class="card"><h3 style="color:#67e8f9">Future work</h3><p class="muted small">Add a real ns-3 Wi-Fi model, richer clues for shared bottlenecks, an online-learning classifier, and a Linux kernel (eBPF) port.</p></div>
+  </div>
+  <h2 style="margin-top:56px">Questions you may ask us</h2>
+  <div id="qa" style="max-width:960px"></div>
+  <h2 style="margin-top:56px">The team</h2>
+  <div class="grid g3" id="team"></div>
+</section>
+</main>
+
+<footer>
+  <div class="big grad">Thank you</div>
+  LossLens · github.com/ShreyaShirsh/LossLens<br>
+  <span style="font-size:12px">Tip: press → and ← to move between sections, F11 for full screen</span>
+</footer>
+
+<script src="lib.js"></script>
+<script src="hero.js"></script>
+<script src="sections.js"></script>
+<script src="lab.js"></script>
+<script src="main.js"></script>
+</body>
+</html>

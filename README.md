@@ -49,12 +49,29 @@ Mean of 3 runs of 30 s, with bursty background traffic using 30% of the link on 
 All figures: [`results/plots/`](results/plots/) ·
 full table: [`results_table.csv`](results/plots/results_table.csv).
 
+## Presentation app
+
+A single app that is both the presentation and the live demo. **Double-click `LossLens.bat`**
+(or run `python app/server.py`); it opens in your browser. It needs only Python and, for live
+runs, the WSL + ns-3 setup below. Everything else (results, the decision tree, 8 pre-run
+networks) is stored in `app/data/`, so it also works offline.
+
+- **Live lab:** pick any network (or roll the dice) and race normal TCP against LossLens on the
+  real ns-3 simulator, with an animated replay, decision ticks and a verdict
+- **Results explorer:** speed vs wireless loss, fairness, and the full table, all interactive
+- **The detective:** accuracy on unseen runs, model comparison, the decision tree drawn out, and
+  a "be the sender" panel to try the classifier yourself
+- Keys: **→ / ←** move between sections, **F11** for full screen
+
+To rebuild the baked data after new experiments: `python app/build_data.py` and
+`python app/make_demo_cache.py`.
+
 ## How it works
 
 | Phase | What was done |
 |---|---|
 | 1. Simulation | ns-3.49 scenario with a congestible router queue and a lossy wireless hop; every drop is labelled congestion or random |
-| 2. Data | 300 runs over link speeds, RTTs, loss rates, buffers and traffic mixes: 36,055 labelled loss events, 7 sender-side features each |
+| 2. Data | 300 runs over link speeds, RTTs, loss rates, buffers and traffic mixes: 36,182 labelled loss events, 7 sender-side features each |
 | 3. Classifier | Decision tree (depth 6), threshold tuned on held-out runs for ≥ 90% congestion recall, exported to plain C++ |
 | 4. TCP | `TcpLossAware` extends CUBIC: cuts the window only for congestion, keeps growing through random-loss recovery, safety fallback |
 | 5. Evaluation | 396 runs against NewReno, CUBIC, Westwood+, Veno and BBR, plus fairness tests against CUBIC users |
@@ -95,6 +112,7 @@ sim/      ns-3 scenario, drop labelling, experiment sweeps
 ml/       Dataset loading, training, export of the tree to C++
 tcp/      TcpLossAware congestion control + generated classifier
 eval/     Plots, results table, demo graph
+app/      Presentation app: live lab, results explorer, decision-tree viewer
 scripts/  Setup, demo and evaluation scripts
 docs/     Setup guide and the file formats between components
 report/   Report outline
