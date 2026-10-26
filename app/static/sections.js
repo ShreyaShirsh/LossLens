@@ -274,9 +274,9 @@ function initWrap() {
     qa.append(box);
   });
   const team = [
-    ['Shreya Shirsh', 'SS', 'Development', 'Built everything technical: the ns-3 simulation, drop labelling, dataset, classifier, LossLens TCP, 396 experiments, this app.'],
-    ['Avani Abhay Chaudhary', 'AC', 'Documentation', 'Literature review, introduction, related work, simulation set-up and classifier chapters, references.'],
-    ['Arpita Sinha', 'AS', 'Documentation', 'Design and results chapters, diagrams, slides, abstract and conclusion.'],
+    ['Shreya Shirsh', 'SS', 'Developer', 'Built everything technical: the ns-3 simulation, drop labelling, dataset, classifier, LossLens TCP, 396 experiments, this app.'],
+    ['Avani Abhay Chaudhary', 'AC', 'Developer', 'Literature review, introduction, related work, simulation set-up and classifier chapters, references.'],
+    ['Arpita Sinha', 'AS', 'Developer', 'Design and results chapters, diagrams, slides, abstract and conclusion.'],
   ];
   $('#team').innerHTML = team.map(([n, i, r, d]) => `<div class="card member"><div class="avatar">${i}</div><h3>${n}</h3><div class="chip" style="margin:6px 0 10px">${r}</div><p class="muted small">${d}</p></div>`).join('');
 }
